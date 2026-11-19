@@ -81,6 +81,7 @@
   .suggestions li { padding: 0.55rem 0.75rem; cursor: pointer; }
   .suggestions li[aria-selected="true"], .suggestions li[role="option"]:hover { background: var(--tint); }
   .suggestions li.message { cursor: default; color: var(--muted); }
+  .suggestions .syn { color: var(--muted); font-size: 0.92rem; }
   .suggestions li.listhead { cursor: default; color: var(--navy); font-weight: 600; font-size: 0.95rem; background: var(--tint); position: sticky; top: 0; }
   .suggestions li.words { border-top: 1px solid var(--rule); color: var(--purple); position: sticky; bottom: 0; background: #fff; }
   .suggestions li.words[aria-selected="true"], .suggestions li.words:hover { background: var(--tint); }
@@ -204,7 +205,7 @@
     <fieldset>
       <legend>MeSH headings for the topic</legend>
       <p class="rule" id="termRule">Choose from the list. Typing alone adds nothing.</p>
-      <p id="termHow">MeSH is the fixed set of subject headings that PubMed uses to index papers. Type a word in the box, and the matching headings appear below it. Click one to add it.</p>
+      <p id="termHow">MeSH is the fixed set of subject headings that PubMed uses to index papers. Type a word in the box, and the matching headings appear below it. Everyday words work too: carers finds Caregivers. Click a heading to add it.</p>
       <p class="hint" id="termHint">For a manuscript on delirium after hip fracture surgery, you would choose Delirium and Hip Fractures. If no heading fits a named tool, drug or method, choose the last option in the list to search for the exact words. A paper counts when it matches every entry.</p>
       <div class="combo">
         <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
@@ -294,7 +295,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 2.1, November 2026.</p>
+  <p>Version 2.2, November 2026.</p>
 </div></div>
 </footer>
 
@@ -443,7 +444,8 @@ async function countFor(query) {
    run of exact words. Nothing else can be added.
    ------------------------------------------------------------------ */
 const state = { terms: [], running: false, last: null, shown: SETTINGS.listSize, picked: new Set() };
-let meshTimer = null, meshAbort = null, meshSeq = 0, suggestions = [], activeIndex = -1, listNote = "";
+let meshTimer = null, synTimer = null, meshAbort = null, suggestions = [], activeIndex = -1, listNote = "", notePending = false, userMoved = false;
+const look = { seq: 0, q: "", labels: null, syns: null, labelsFailed: false, synsFailed: false };
 
 function setTermNote(text, warn) {
   $("termNote").textContent = text || "";
@@ -457,7 +459,8 @@ function leftoverNote() {
   return true;
 }
 function closeSuggestions() {
-  suggestions = []; activeIndex = -1; listNote = "";
+  clearTimeout(meshTimer); clearTimeout(synTimer); look.seq++;
+  suggestions = []; activeIndex = -1; listNote = ""; notePending = false; userMoved = false;
   $("termList").hidden = true; $("termList").replaceChildren();
   $("termInput").setAttribute("aria-expanded", "false");
   $("termInput").removeAttribute("aria-activedescendant");
@@ -465,11 +468,12 @@ function closeSuggestions() {
 function renderSuggestions() {
   const list = $("termList");
   list.replaceChildren();
-  if (listNote) list.append(el("li", { class: "message", text: listNote }));
+  if (listNote) list.append(el("li", { class: "message" + (notePending ? " pending" : ""), text: listNote }));
   else if (suggestions.some((s) => s.kind === "mesh")) list.append(el("li", { class: "listhead", text: "Choose a MeSH heading" }));
   suggestions.forEach((s, i) => {
     const li = el("li", { role: "option", id: "opt" + i, class: s.kind === "words" ? "words" : null,
       "aria-selected": i === activeIndex ? "true" : "false", text: s.display });
+    if (s.syn) li.append(el("span", { class: "syn", text: " includes “" + s.syn + "”" }));
     li.addEventListener("mousedown", (e) => { e.preventDefault(); addTerm(s); });
     list.append(li);
   });
@@ -492,30 +496,72 @@ function wordsOption(q) {
   if (state.terms.some((t) => t.id === id)) return null;
   return { kind: "words", label: text, id, display: "Exact words in title or abstract: “" + text + "”" };
 }
-// First choice: the MeSH lookup service. It answers fast and matches any part of a term.
+// Source 1: the MeSH lookup service. It answers fast and matches the heading names.
 async function meshFromLookup(q, signal) {
   const res = await fetch(MESH_LOOKUP + "?label=" + encodeURIComponent(q) + "&match=contains&limit=15", { signal });
   if (!res.ok) throw new Error("mesh " + res.status);
   const data = await res.json();
   return (Array.isArray(data) ? data : [])
     .filter((d) => d && d.label && d.resource)
-    .map((d) => ({ kind: "mesh", label: d.label, id: String(d.resource).split("/").pop(), display: d.label }));
+    .map((d) => ({ label: d.label, id: String(d.resource).split("/").pop() }));
 }
-// Backup: the MeSH database behind PubMed's own search service, used when the lookup service does not answer.
-async function meshFromPubmed(q) {
+// Source 2: the MeSH database behind PubMed's search service. It also matches the other names a heading goes by
+// (carers for Caregivers, EEG for Electroencephalography), and it stands in when source 1 does not answer.
+async function meshFromPubmed(q, isStale) {
   const term = cleanWords(q);
   if (!term) return [];
-  const es = await eutils("esearch.fcgi", { db: "mesh", retmode: "json", retmax: "15", term: term + "*" });
+  const es = await eutils("esearch.fcgi", { db: "mesh", retmode: "json", retmax: "20", term: term + "*" });
+  if (isStale && isStale()) return [];
   const ids = (es && es.esearchresult && es.esearchresult.idlist) || [];
   if (!ids.length) return [];
   const sm = await eutils("esummary.fcgi", { db: "mesh", retmode: "json", id: ids.join(",") });
   const res = (sm && sm.result) || {};
+  const ql = term.toLowerCase();
   return (res.uids || []).map((u) => res[u])
     .filter((x) => x && x.ds_recordtype === "descriptor" && x.ds_meshui && Array.isArray(x.ds_meshterms) && x.ds_meshterms.length)
-    .map((x) => ({ kind: "mesh", label: x.ds_meshterms[0], id: x.ds_meshui, display: x.ds_meshterms[0] }));
+    .map((x, order) => {
+      const others = x.ds_meshterms.slice(1).filter((s) => typeof s === "string");
+      // 0 the same words; 1 starts with them as whole words; 2 contains them as whole words; 3 and 4 the same inside a longer word
+      const whole = (l) => { const i = l.indexOf(ql); const end = l[i + ql.length]; return i >= 0 && (i === 0 || !/[\p{L}\p{N}]/u.test(l[i - 1])) && (end === undefined || !/[\p{L}\p{N}]/u.test(end)); };
+      const rank = (s) => { const l = s.toLowerCase(); return l === ql ? 0 : !l.includes(ql) ? 9 : whole(l) ? (l.startsWith(ql) ? 1 : 2) : (l.startsWith(ql) ? 3 : 4); };
+      const best = others.filter((s) => rank(s) < 9).sort((a, b) => rank(a) - rank(b) || a.length - b.length)[0] || "";
+      return { label: x.ds_meshterms[0], id: x.ds_meshui, syn: best, synRank: best ? rank(best) : 9, order };
+    });
 }
-async function lookupMesh(q) {
-  const seq = ++meshSeq;
+// Merge the two sources and rank: heading names first, then exact other names, then looser matches.
+function refreshSuggestions() {
+  const q = look.q, ql = q.toLowerCase();
+  const byId = new Map();
+  const add = (s) => { const old = byId.get(s.id); if (!old || s.score < old.score) byId.set(s.id, s); };
+  for (const s of look.labels || []) {
+    const l = s.label.toLowerCase();
+    add({ kind: "mesh", label: s.label, id: s.id, display: s.label, syn: "", score: l === ql ? 0 : l.startsWith(ql) ? 1 : 3, order: 0 });
+  }
+  for (const s of look.syns || []) {
+    const l = s.label.toLowerCase(), y = (s.syn || "").toLowerCase();
+    const inLabel = l.includes(ql);
+    const score = l === ql ? 0 : l.startsWith(ql) ? 1 : s.synRank === 0 ? 2 : inLabel ? 3 : y ? 3 + s.synRank : 8;
+    add({ kind: "mesh", label: s.label, id: s.id, display: s.label, syn: inLabel ? "" : s.syn, score, order: s.order });
+  }
+  const mesh = [...byId.values()].filter((s) => !state.terms.some((t) => t.id === s.id))
+    .sort((a, b) => a.score - b.score || (a.score >= 8 ? a.order - b.order : a.label.length - b.label.length) || a.label.localeCompare(b.label))
+    .slice(0, 14);
+  const words = wordsOption(q);
+  const pending = look.labels === null || look.syns === null;
+  const activeId = userMoved && suggestions[activeIndex] ? suggestions[activeIndex].id : null;
+  suggestions = words ? mesh.concat([words]) : mesh;
+  // Enter takes the first option only when it is a close match, so a hurried editor does not add a wrong heading.
+  activeIndex = mesh.length ? (mesh[0].score <= 2 || (mesh.length === 1 && !pending) ? 0 : -1) : (words && !pending ? 0 : -1);
+  if (activeId) { const keep = suggestions.findIndex((s) => s.id === activeId); if (keep >= 0) activeIndex = keep; }
+  listNote = ""; notePending = false;
+  if (!mesh.length) {
+    if (look.labelsFailed && look.synsFailed) listNote = "The term list did not load. Check your connection and type again.";
+    else if (pending) { listNote = "Looking for matching headings."; notePending = true; }
+    else listNote = "No MeSH heading matches these letters." + (words ? "" : " Try another word.");
+  }
+  renderSuggestions();
+}
+async function lookupLabels(q, seq) {
   if (meshAbort) meshAbort.abort();
   const ctrl = new AbortController();
   meshAbort = ctrl;
@@ -524,20 +570,16 @@ async function lookupMesh(q) {
   try { found = await meshFromLookup(q, ctrl.signal); }
   catch (e) { if (e.name === "AbortError" && !timedOut) { clearTimeout(timer); return; } }   // replaced by newer typing
   clearTimeout(timer);
-  if (found === null) { try { found = await meshFromPubmed(q); } catch (e) { found = null; } }
-  if (seq !== meshSeq) return;                                                              // newer typing has taken over
-  const ql = q.toLowerCase();
-  const score = (s) => { const l = s.label.toLowerCase(); return l === ql ? 0 : l.startsWith(ql) ? 1 : 2; };
-  const mesh = (found || [])
-    .filter((s) => !state.terms.some((t) => t.id === s.id))
-    .sort((a, b) => score(a) - score(b) || a.label.length - b.label.length || a.label.localeCompare(b.label));
-  const words = wordsOption(q);
-  suggestions = words ? mesh.concat([words]) : mesh;
-  activeIndex = suggestions.length ? 0 : -1;
-  listNote = "";
-  if (found === null) listNote = "The term list did not load. Check your connection and type again.";
-  else if (!mesh.length) listNote = "No MeSH heading contains these letters." + (words ? "" : " Try another word.");
-  renderSuggestions();
+  if (seq !== look.seq) return;                                                             // newer typing has taken over
+  look.labels = found || []; look.labelsFailed = found === null;
+  refreshSuggestions();
+}
+async function lookupSynonyms(q, seq) {
+  let found = null;
+  try { found = await meshFromPubmed(q, () => seq !== look.seq); } catch (e) { found = null; }
+  if (seq !== look.seq) return;
+  look.syns = found || []; look.synsFailed = found === null;
+  refreshSuggestions();
 }
 function addTerm(s) {
   if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five entries. Remove one to add another.", true); closeSuggestions(); return; }
@@ -565,22 +607,26 @@ function renderChips() {
   $("runButton").disabled = state.running;
 }
 $("termInput").addEventListener("input", () => {
-  clearTimeout(meshTimer);
+  clearTimeout(meshTimer); clearTimeout(synTimer);
   setTermNote("");
   const q = $("termInput").value.trim();
   if (q.length < 2) { closeSuggestions(); return; }
-  meshTimer = setTimeout(() => lookupMesh(q), 250);
+  const seq = ++look.seq;
+  look.q = q; look.labels = null; look.syns = q.length < 3 ? [] : null; look.labelsFailed = false; look.synsFailed = false; userMoved = false;
+  meshTimer = setTimeout(() => lookupLabels(q, seq), 250);
+  if (q.length >= 3) synTimer = setTimeout(() => lookupSynonyms(q, seq), 600);
 });
 $("termInput").addEventListener("keydown", (e) => {
-  if (e.key === "ArrowDown" && suggestions.length) { e.preventDefault(); activeIndex = (activeIndex + 1) % suggestions.length; renderSuggestions(); }
-  else if (e.key === "ArrowUp" && suggestions.length) { e.preventDefault(); activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length; renderSuggestions(); }
+  if (e.key === "ArrowDown" && suggestions.length) { e.preventDefault(); userMoved = true; activeIndex = (activeIndex + 1) % suggestions.length; renderSuggestions(); }
+  else if (e.key === "ArrowUp" && suggestions.length) { e.preventDefault(); userMoved = true; activeIndex = activeIndex <= 0 ? suggestions.length - 1 : activeIndex - 1; renderSuggestions(); }
   else if (e.key === "Enter") {
     if (suggestions.length && activeIndex >= 0) { e.preventDefault(); addTerm(suggestions[activeIndex]); }
     else if ($("termInput").value.trim()) { e.preventDefault(); leftoverNote(); }
   }
   else if (e.key === "Escape") closeSuggestions();
 });
-$("termInput").addEventListener("blur", () => setTimeout(() => { closeSuggestions(); if (document.activeElement !== $("termInput")) leftoverNote(); }, 150));
+// If the cursor is back in the box by then, leave the list and any lookup in progress alone.
+$("termInput").addEventListener("blur", () => setTimeout(() => { if (document.activeElement === $("termInput")) return; closeSuggestions(); leftoverNote(); }, 150));
 
 /* ------------------------------------------------------------------
    Building the PubMed query
@@ -1124,7 +1170,11 @@ async function copyText(text) {
     return ok;
   }
 }
-function csvCell(v) { const s = String(v === null || v === undefined ? "" : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function csvCell(v) {
+  let s = String(v === null || v === undefined ? "" : v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;          // stops a spreadsheet from running the cell as a formula
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
 function buildCsv(people) {
   const L = state.last;
   const rows = [["rank", "name", "papers", "first_author_papers", "last_author_papers", "design_papers", "latest_year", "affiliation", "affiliation_pmid",
