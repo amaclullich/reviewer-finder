@@ -44,11 +44,15 @@
   :focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
   .tray :focus-visible { outline-color: var(--gold); }
   [hidden] { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .printonly { display: none; }
+  #termNote:empty, #conflictNote:empty, #actionNote:empty, #staleNote:empty { display: none; }
+  #termInput { scroll-margin-top: 0.75rem; }
 
   /* Masthead */
   .mast { background: var(--purple); color: #fff; border-bottom: 0.4rem solid var(--purple-mid); }
-  .mast .wrap { display: grid; grid-template-columns: auto 1fr; gap: 1.75rem; align-items: center; padding-top: 2.5rem; padding-bottom: 2.5rem; }
-  .mast img { width: 7.5rem; height: 7.5rem; display: block; }
+  .mast .wrap { display: grid; grid-template-columns: auto 1fr; gap: 1.75rem; align-items: center; padding-top: 1.6rem; padding-bottom: 1.6rem; }
+  .mast img { width: 6.5rem; height: 6.5rem; display: block; }
   .mast h1 { color: #fff; font-size: clamp(2.1rem, 5.2vw, 3.3rem); letter-spacing: -0.01em; }
   .journal { font-family: var(--serif); font-style: italic; color: #eadcf5; margin: 0 0 0.35rem; font-size: 1.1rem; }
   .lede { font-size: 1.2rem; line-height: 1.45; margin-top: 0.7rem; color: #fff; }
@@ -60,11 +64,17 @@
   .steps strong { font-family: var(--serif); font-weight: 400; font-size: 1.25rem; color: var(--navy); padding-top: 0.2rem; }
   .steps span.what { color: var(--ink); font-size: 1rem; }
 
-  .keepout { background: var(--tint); border-left: 0.4rem solid var(--purple); padding: 1.1rem 1.4rem 1.3rem; margin-top: 2.5rem; }
-  .keepout h2 { font-size: 1.35rem; }
+  .keepout { background: var(--tint); border-left: 0.4rem solid var(--purple); padding: 1rem 1.3rem 1.2rem; margin-bottom: 1.75rem; }
+  .keepout h2 { font-size: 1.25rem; }
+  .keepout p { font-size: 1rem; }
+  @media (min-width: 60rem) {
+    .start { display: grid; grid-template-columns: minmax(0, 1fr) 17.5rem; column-gap: 2.5rem; align-items: start; }
+    .start .keepout { grid-column: 2; grid-row: 1; margin: 0.4rem 0 0; }
+    .start fieldset { grid-column: 1; grid-row: 1; }
+  }
 
   /* Form */
-  form { margin-top: 2.75rem; }
+  form { margin-top: 2rem; }
   fieldset { border: 0; padding: 0; margin: 0 0 2rem; min-width: 0; }
   legend, .field-label { font-family: var(--serif); font-size: 1.35rem; color: var(--navy); padding: 0; display: block; }
   .hint { color: var(--muted); font-size: 0.975rem; margin-top: 0.35rem; }
@@ -80,16 +90,20 @@
   .suggestions { list-style: none; margin: 0; padding: 0; position: absolute; left: 0; right: 0; top: 100%; z-index: 5; background: #fff;
     border: 1.5px solid var(--navy); border-top: 0; max-height: 21rem; overflow: auto; box-shadow: 0 10px 24px rgba(29, 53, 87, 0.16); }
   .suggestions li { padding: 0.55rem 0.75rem; cursor: pointer; }
+  .suggestions { scroll-padding-block: 3rem 5rem; }
   .suggestions li[aria-selected="true"], .suggestions li[role="option"]:hover { background: var(--tint); }
+  .suggestions li[aria-selected="true"] { box-shadow: inset 0.3rem 0 0 var(--purple); }
   .suggestions li.message { cursor: default; color: var(--muted); }
   .suggestions .syn { color: var(--muted); font-size: 0.92rem; }
-  .suggestions li.listhead { cursor: default; color: var(--navy); font-weight: 600; font-size: 0.95rem; background: var(--tint); position: sticky; top: 0; }
+  .suggestions li.listhead { cursor: default; color: var(--muted); font-size: 0.85rem; background: #fff; border-bottom: 1px solid var(--rule); position: sticky; top: 0; }
   .suggestions li.words { border-top: 1px solid var(--rule); color: var(--purple); position: sticky; bottom: 0; background: #fff; }
   .suggestions li.words[aria-selected="true"], .suggestions li.words:hover { background: var(--tint); }
   .chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0.9rem 0 0; }
   .chips li { display: flex; align-items: center; background: var(--purple); color: #fff; border: 1.5px solid var(--purple); border-radius: 4px; padding: 0.3rem 0.3rem 0.3rem 0.8rem; }
   .chips li.words { background: #fff; color: var(--purple); }
   .chips .kind { font-size: 0.82rem; margin-left: 0.5rem; opacity: 0.85; }
+  .chips li { max-width: 100%; flex-wrap: wrap; }
+  .chips li:not(.words) button:focus-visible, .person.picked .pick input:focus-visible { outline-color: #fff; }
   .chips button { font: inherit; background: transparent; color: inherit; border: 0; cursor: pointer; padding: 0 0.5rem; font-size: 1.25rem; line-height: 1; }
   .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem 1.5rem; }
   .row > div { display: flex; flex-direction: column; }
@@ -113,15 +127,20 @@
   @media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
 
   /* Results */
-  #results { margin-top: 3rem; padding-top: 2.5rem; border-top: 3px solid var(--purple); }
+  #results { margin-top: 3rem; padding-top: 1.5rem; border-top: 3px solid var(--purple); scroll-margin-top: 0; }
   .stop { background: var(--stop-bg); color: var(--stop-ink); border-left: 0.4rem solid var(--stop-ink); padding: 1rem 1.25rem; margin-top: 1.5rem; max-width: 42rem; }
   .stop p:first-child { margin-top: 0; }
   .fixes { margin-top: 1.25rem; max-width: 42rem; }
   .fixes ul { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
   .actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; margin-top: 1.25rem; }
-  .checks { background: var(--tint); padding: 1.2rem 1.4rem 1.4rem; margin-top: 2rem; }
-  .checks ol { margin: 0.6rem 0 0; padding-left: 1.3rem; max-width: 40rem; }
-  .checks li { margin-top: 0.3rem; }
+  .checks { background: var(--tint); padding: 0.9rem 1.3rem 1.1rem; margin-top: 1.5rem; }
+  .checks h3 { font-size: 1.15rem; }
+  .checks ol { margin: 0.4rem 0 0; padding-left: 1.3rem; max-width: none; font-size: 1rem; }
+  .checks li { margin-top: 0.15rem; }
+  @media (min-width: 60rem) {
+    .pre { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 2.5rem; align-items: start; }
+    .pre .conflict { margin-top: 1.5rem; }
+  }
   .flag { background: var(--note-bg); color: var(--note-ink); padding: 0.55rem 0.8rem; margin-top: 0.9rem; max-width: 40rem; }
   .flag.conflict { background: var(--stop-bg); color: var(--stop-ink); }
   .flag.conflict a { color: inherit; }
@@ -129,7 +148,8 @@
   .tag { display: inline-block; font-size: 0.85rem; background: var(--note-bg); color: var(--note-ink); padding: 0.1rem 0.55rem; border-radius: 3px; }
   .pair { color: var(--muted); font-size: 0.95rem; margin-top: 0.6rem; max-width: 40rem; }
   .person .divider { grid-column: 1 / -1; margin: 0 0 1.4rem; padding-top: 0.7rem; border-top: 3px solid var(--navy); font-family: var(--serif); font-size: 1.15rem; color: var(--navy); max-width: none; }
-  .conflict { margin-top: 2rem; max-width: 42rem; }
+  .conflict { margin-top: 1.5rem; max-width: 42rem; }
+  .conflict .field-label { font-size: 1.15rem; }
   .conflict input { font: inherit; width: 100%; padding: 0.6rem 0.75rem; border: 1.5px solid var(--muted); border-radius: 4px; margin-top: 0.5rem; background: #fff; color: var(--ink); }
   .people { list-style: none; padding: 0; margin: 2rem 0 0; border-bottom: 1px solid var(--rule); }
   .person { display: grid; grid-template-columns: 4rem 1fr; border-top: 1px solid var(--rule); padding: 1.6rem 0.75rem 1.7rem; }
@@ -182,7 +202,8 @@
     .mast h1, .journal, .lede { color: #000; }
     .steps, .keepout, form, .actions, .tray, .pick, .more, #actionNote, #privacyNote, #staleNote, .conflict { display: none !important; }
     body.has-tray { padding-bottom: 0 !important; }
-    .person { break-inside: avoid; }
+    .printonly { display: block; }
+    .person h3 { break-after: avoid; }
   }
 </style>
 </head>
@@ -201,35 +222,31 @@
 
 <main class="wrap">
 
-  <ol class="steps" aria-label="How to use this page">
-    <li><span class="num" aria-hidden="true">1</span><strong>Pick MeSH headings</strong><span class="what">Type a word, then choose from the list. Two or three headings are usually enough.</span></li>
-    <li><span class="num" aria-hidden="true">2</span><strong>Find candidates</strong><span class="what">The page lists up to 20 people who have recently published on those headings.</span></li>
-    <li><span class="num" aria-hidden="true">3</span><strong>Check and invite</strong><span class="what">Check each person, then invite through the journal's system as usual.</span></li>
-  </ol>
   <noscript><p class="stop">This page needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
 
-  <section class="keepout" aria-labelledby="keepoutHead">
-    <h2 id="keepoutHead">Keep the manuscript out of this page</h2>
-    <p>Enter MeSH headings and, if you need them, a few exact words such as the name of a tool or a drug. Leave out the title, the abstract and the findings. Leave out a trial name or acronym that would identify the manuscript.</p>
-    <p>The page sends your search entries to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
-    <p>The authors' surnames have one place: the conflict check under the results. That box is read in your browser and sent nowhere.</p>
-  </section>
 
   <form id="searchForm" novalidate>
+    <div class="start">
+    <section class="keepout" aria-labelledby="keepoutHead">
+      <h2 id="keepoutHead">Keep the manuscript out of this page</h2>
+      <p>Leave out the title, the abstract, the findings and any trial name. The page sends your topics to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
+    </section>
     <fieldset>
-      <legend>MeSH headings for the topic</legend>
-      <p class="rule" id="termRule">Choose from the list. Typing alone adds nothing.</p>
-      <p id="termHow">MeSH is the fixed set of subject headings that PubMed uses to index papers. Type a word in the box, and the matching headings appear below it. Everyday words and British spellings work too: carers finds Caregivers, and paediatric finds Pediatrics. Click a heading to add it.</p>
-      <p class="hint" id="termHint">For a manuscript on delirium after hip fracture surgery, you would choose Delirium and Hip Fractures. If no heading fits a named tool, drug or method, choose the last option in the list to search for the exact words. A paper counts when it matches every entry.</p>
-      <div class="combo">
-        <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
-               placeholder="Type a word, then choose from the list" role="combobox" aria-expanded="false"
-               aria-controls="termList" aria-autocomplete="list" aria-describedby="termRule termHow termHint" aria-label="Search the MeSH headings">
-        <ul class="suggestions" id="termList" role="listbox" aria-label="Matching MeSH headings" hidden></ul>
-      </div>
+      <legend>Topics of the manuscript</legend>
+      <p class="rule" id="termRule">Choose MeSH headings from the list. Free text adds nothing.</p>
+      <p id="termHow">MeSH headings are the subject headings that PubMed uses. Type one word and the matching headings appear. Click one to add it. Everyday and British words work: carers finds Caregivers.</p>
+      <p class="hint" id="termHint">Delirium is added for you. For delirium after hip fracture surgery, add Hip Fractures. Two entries are usually enough, because a paper must match every entry. For a named tool, drug or method with no heading, choose the last option in the list.</p>
       <ul class="chips" id="chips" aria-label="Entries you have picked"></ul>
       <p class="hint" id="termNote" role="status"></p>
+      <div class="combo">
+        <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
+               placeholder="Type one word" role="combobox" aria-expanded="false"
+               aria-controls="termList" aria-autocomplete="list" aria-describedby="termRule termHow termHint" aria-label="Search the MeSH headings">
+        <ul class="suggestions" id="termList" role="listbox" aria-label="Matching MeSH headings" tabindex="-1" hidden></ul>
+      </div>
+      <p class="sr" id="listStatus" role="status"></p>
     </fieldset>
+    </div>
 
     <div class="row">
       <div>
@@ -244,7 +261,7 @@
           <option value="either" selected>First or last author</option>
           <option value="first">First author only</option>
           <option value="last">Last author only</option>
-          <option value="any">Any author, including co-authors</option>
+          <option value="any">Any author</option>
         </select>
       </div>
       <div>
@@ -275,8 +292,32 @@
 
   <section id="results" aria-labelledby="resultsHead" hidden>
     <h2 id="resultsHead" tabindex="-1">Candidates</h2>
+    <p class="printonly" id="printLine"></p>
     <div id="summary"></div>
-    <p class="flag" id="staleNote" role="status" hidden>You have changed the search since this list was made. Press Find candidates to update it.</p>
+    <p class="flag" id="staleNote" role="status" hidden></p>
+
+    <div class="pre">
+    <section class="checks" id="checks" aria-labelledby="checksHead" hidden>
+      <h3 id="checksHead">Before you invite anyone</h3>
+      <ol>
+        <li>Open a paper and confirm that the person fits the topic.</li>
+        <li>Compare any email with its PubMed record.</li>
+        <li>Check for conflicts and for recent invitations from the journal.</li>
+        <li>Aim for a mix of career stage, country and discipline.</li>
+      </ol>
+    </section>
+
+    <section class="conflict" id="conflict" aria-labelledby="conflictLabel" hidden>
+      <label class="field-label" id="conflictLabel" for="conflictInput">Mark possible conflicts (optional)</label>
+      <p class="hint" id="conflictHint">Type the surnames of the manuscript's authors, with commas between them. For a common surname add an initial, as in Feng Y. The page marks matches and their co-authors below. What you type stays in this browser and is left out of every copy and download.</p>
+      <input type="text" id="conflictInput" autocomplete="off" spellcheck="false" aria-describedby="conflictHint" placeholder="For example: Okafor, Lindqvist, Tan">
+      <p class="hint" id="conflictNote" role="status"></p>
+    </section>
+    </div>
+
+    <ol class="people" id="people"></ol>
+    <p class="more" id="moreRow" hidden><button type="button" class="secondary" id="moreButton">Show more</button></p>
+
     <div class="actions" id="actions" hidden>
       <button type="button" class="secondary" id="copyButton">Copy search record</button>
       <button type="button" class="secondary" id="csvButton">Download list as CSV</button>
@@ -284,28 +325,7 @@
     </div>
     <p class="hint" id="actionNote" role="status"></p>
     <p class="hint" id="privacyNote" hidden>Names and addresses on this page are personal details from public PubMed records. Use them only to invite reviewers. The list download leaves out email addresses, and the shortlist download includes them. Delete downloaded files when you have finished.</p>
-
-    <section class="checks" id="checks" aria-labelledby="checksHead" hidden>
-      <h3 id="checksHead">Before you invite anyone</h3>
-      <ol>
-        <li>Open a linked paper and confirm that this is the right person for the topic.</li>
-        <li>If an email is shown, open the linked PubMed record and compare the address.</li>
-        <li>Check for conflicts with the manuscript's authors: shared papers in recent years, or the same institution. The manuscript's own authors may appear in this list. The conflict check below marks some of these for you.</li>
-        <li>Check the journal's records for recent invitations to the same person.</li>
-        <li>Aim for a mix of career stage, country and discipline.</li>
-      </ol>
-      <p>PubMed has no unique number for each author. The page separates people by surname and first name. Two people with the same full name can appear as one entry, so check the affiliation on each paper.</p>
-    </section>
-
-    <section class="conflict" id="conflict" aria-labelledby="conflictLabel" hidden>
-      <label class="field-label" id="conflictLabel" for="conflictInput">Mark possible conflicts (optional)</label>
-      <p class="hint" id="conflictHint">Type the surnames of the manuscript's authors, with commas between them. The page marks anyone on the list who has the same surname or has written a listed paper with one of them. What you type stays in this browser. It is sent nowhere, and it is left out of every copy and download.</p>
-      <input type="text" id="conflictInput" autocomplete="off" spellcheck="false" aria-describedby="conflictHint" placeholder="For example: Okafor, Lindqvist, Tan">
-      <p class="hint" id="conflictNote" role="status"></p>
-    </section>
-
-    <ol class="people" id="people"></ol>
-    <p class="more" id="moreRow" hidden><button type="button" class="secondary" id="moreButton">Show 20 more</button></p>
+    <p class="hint" id="namesNote" hidden>PubMed has no unique number for each author. The page separates people by surname and first name. Two people with the same full name can appear as one entry, so check the affiliation on each paper.</p>
   </section>
 </main>
 
@@ -313,7 +333,7 @@
   <div class="wrap">
     <p id="trayText" role="status"></p>
     <button type="button" id="trayCopy" aria-label="Copy shortlist">Copy<span class="wide"> shortlist</span></button>
-    <button type="button" id="trayCsv" aria-label="Download shortlist as CSV">Download<span class="wide"> shortlist as</span> CSV</button>
+    <button type="button" id="trayCsv">Download<span class="wide"> shortlist as</span> CSV</button>
     <button type="button" class="ghost" id="trayClear" aria-label="Clear shortlist">Clear</button>
   </div>
 </div>
@@ -321,7 +341,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 3.1, November 2026.</p>
+  <p>Version 3.2, November 2026.</p>
 </div></div>
 </footer>
 
@@ -335,6 +355,7 @@ const SETTINGS = {
   journalLine: "For handling editors of the journal Delirium",
   contactEmail: "",              // optional: NCBI asks tool owners to give a contact address
   toolName: "reviewer_candidate_finder",
+  startTerms: [{ kind: "mesh", label: "Delirium", id: "D003693" }],   // entries already chosen when the page opens; use [] for none
   minPapers: 20,                 // the search stops below this number of matching papers
   fullPapers: 50,                // below this number the list is marked as short, and people with one matching paper are included
   maxPapersRead: 3000,           // the page reads at most this many of the most recent papers
@@ -382,7 +403,7 @@ const REQUEST_TIMEOUT_MS = 60000;
 const LOOKUP_TIMEOUT_MS = 6000;
 const SUMMARY_BATCH = 500;
 const RECORD_BATCH = 150;
-const PAPERS_PER_GROUP = 40;
+const PAPERS_PER_GROUP = 100;
 
 /* ------------------------------------------------------------------
    Small helpers
@@ -479,11 +500,12 @@ async function countFor(query) {
    Entry picker. An entry is a MeSH term from the lookup, or a short
    run of exact words. Nothing else can be added.
    ------------------------------------------------------------------ */
-const state = { terms: [], running: false, stopped: false, last: null, notes: null, shown: SETTINGS.listSize, picked: new Set() };
+const startTerms = () => SETTINGS.startTerms.map((t) => Object.assign({}, t));
+const state = { terms: startTerms(), dropNote: "", running: false, stopped: false, last: null, notes: null, shown: SETTINGS.listSize, picked: new Set() };
 let meshTimer = null, synTimer = null, meshAbort = null, suggestions = [], activeIndex = -1, listNote = "", notePending = false, userMoved = false;
 const look = { seq: 0, q: "", us: "", labels: null, syns: null, labelsFailed: false, synsFailed: false };
 // MeSH uses American spelling. When the typed word has a British spelling, the page looks up the American one as well.
-const UK_US = [[/paed/g, "ped"], [/anaesth/g, "anesth"], [/haem/g, "hem"], [/aemi/g, "emi"], [/gynaec/g, "gynec"], [/oesoph/g, "esoph"],
+const UK_US = [[/learning disabilit\w*/g, "intellectual disability"], [/care homes?/g, "nursing homes"], [/old age psychiatr\w*/g, "geriatric psychiatry"], [/paed/g, "ped"], [/anaesth/g, "anesth"], [/haem/g, "hem"], [/aemi/g, "emi"], [/gynaec/g, "gynec"], [/oesoph/g, "esoph"],
   [/oedem/g, "edem"], [/oestr/g, "estr"], [/foet/g, "fet"], [/faec/g, "fec"], [/aetiol/g, "etiol"], [/rrhoea/g, "rrhea"], [/pnoea/g, "pnea"],
   [/coeliac/g, "celiac"], [/caesar/g, "cesar"], [/ageing/g, "aging"], [/tumour/g, "tumor"], [/behaviour/g, "behavior"], [/colour/g, "color"],
   [/labour/g, "labor"], [/centre/g, "center"], [/fibre/g, "fiber"], [/programme/g, "program"], [/sulph/g, "sulf"], [/counsell/g, "counsel"],
@@ -509,7 +531,7 @@ function leftoverNote() {
 function closeSuggestions() {
   clearTimeout(meshTimer); clearTimeout(synTimer); look.seq++;
   suggestions = []; activeIndex = -1; listNote = ""; notePending = false; userMoved = false;
-  $("termList").hidden = true; $("termList").replaceChildren();
+  $("termList").hidden = true; $("termList").replaceChildren(); $("listStatus").textContent = "";
   $("termInput").setAttribute("aria-expanded", "false");
   $("termInput").removeAttribute("aria-activedescendant");
 }
@@ -522,11 +544,11 @@ function renderSuggestions() {
     const li = el("li", { role: "option", id: "opt" + i, class: s.kind === "words" ? "words" : null,
       "aria-selected": i === activeIndex ? "true" : "false", text: s.display });
     if (s.syn) li.append(el("span", { class: "syn", text: " includes “" + s.syn + "”" }));
-    li.addEventListener("mousedown", (e) => { e.preventDefault(); addTerm(s); });
-    li.addEventListener("click", () => addTerm(s));                        // some screen readers send a click with no mouse press
+    li.addEventListener("click", () => addTerm(s));
     list.append(li);
   });
   list.hidden = false;
+  $("listStatus").textContent = notePending ? "" : listNote;               // read out by screen readers
   $("termInput").setAttribute("aria-expanded", suggestions.length ? "true" : "false");
   if (activeIndex >= 0) {
     $("termInput").setAttribute("aria-activedescendant", "opt" + activeIndex);
@@ -592,21 +614,25 @@ function refreshSuggestions() {
     const score = l === ql || l === qa ? 0 : l.startsWith(ql) || l.startsWith(qa) ? 1 : s.synRank === 0 ? 2 : inLabel ? 3 : y ? 3 + s.synRank : 8;
     add({ kind: "mesh", label: s.label, id: s.id, display: s.label, syn: inLabel ? "" : s.syn, score, order: s.order });
   }
-  const mesh = [...byId.values()].filter((s) => !state.terms.some((t) => t.id === s.id))
-    .sort((a, b) => a.score - b.score || (a.score >= 8 ? a.order - b.order : a.label.length - b.label.length) || a.label.localeCompare(b.label))
-    .slice(0, 14);
+  // The journal's own heading comes first whenever the typed words include it.
+  for (const t of SETTINGS.startTerms) if (t.kind === "mesh" && ql.includes(t.label.toLowerCase())) add({ kind: "mesh", label: t.label, id: t.id, display: t.label, syn: "", score: -1, order: 0 });
+  const ranked = [...byId.values()].filter((s) => !state.terms.some((t) => t.id === s.id))
+    .sort((a, b) => a.score - b.score || (a.score >= 8 ? a.order - b.order : a.label.length - b.label.length) || a.label.localeCompare(b.label));
+  const close = ranked.filter((s) => s.score < 8);                            // loose matches are shown only when nothing closer was found
+  const mesh = (close.length ? close : ranked).slice(0, 14);
   const words = wordsOption(q);
   const pending = look.labels === null || look.syns === null;
   const activeId = userMoved && suggestions[activeIndex] ? suggestions[activeIndex].id : null;
-  suggestions = words ? mesh.concat([words]) : mesh;
-  // Enter takes the first option only when it is a close match, so a hurried editor does not add a wrong heading.
-  activeIndex = mesh.length ? (mesh[0].score <= 2 || (mesh.length === 1 && !pending) ? 0 : -1) : (words && !pending ? 0 : -1);
+  suggestions = words && !pending ? mesh.concat([words]) : mesh;          // the exact words option waits until the headings have loaded
+  // Enter takes the first heading only when it is a close match. It never takes the exact words option: the editor has to choose that.
+  activeIndex = mesh.length && (mesh[0].score <= 2 || (mesh.length === 1 && !pending)) ? 0 : -1;
   if (activeId) { const keep = suggestions.findIndex((s) => s.id === activeId); if (keep >= 0) activeIndex = keep; }
   listNote = ""; notePending = false;
   if (!mesh.length) {
     if (look.labelsFailed && (look.synsFailed || q.length < 3)) listNote = "The term list did not load. Check your connection and type again.";
     else if (pending) { listNote = "Looking for matching headings."; notePending = true; }
-    else listNote = "No MeSH heading matches these letters." + (words ? "" : " Try another word.");
+    else if (!words && state.terms.filter((t) => t.kind === "words").length >= SETTINGS.maxWordEntries) listNote = "No MeSH heading matches these letters. The limit is two exact words entries.";
+    else listNote = "No MeSH heading matches these letters." + (/\s/.test(q.trim()) ? " Try one word." : words ? "" : " Try another word.");
   }
   renderSuggestions();
 }
@@ -707,7 +733,14 @@ function readForm() {
 function formSignature() {
   return [state.terms.map((t) => t.id).join("|"), $("designSelect").value, $("positionSelect").value, $("yearsSelect").value, $("excludeBox").checked].join("~");
 }
-function checkStale() { $("staleNote").hidden = !(state.last && !state.running && state.last.sig !== formSignature()); }
+function checkStale() {
+  const note = $("staleNote");
+  if (!state.last || state.running || state.last.sig === formSignature()) { note.hidden = true; note.textContent = ""; return; }
+  const was = state.last.sig.split("~"), now = formSignature().split("~");
+  const parts = ["the entries", "the study design", "the author position", "the period", "the box for letters and editorials"].filter((x, i) => was[i] !== now[i]);
+  note.textContent = "You have changed " + (parts.length > 1 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts[0]) + " since this list was made. Press Find candidates to update it.";
+  note.hidden = false;
+}
 function termClause(t) {
   if (t.kind === "words") return quote(t.label) + (/\s/.test(t.label) ? "[Title/Abstract:~0]" : "[Title/Abstract]");
   return "(" + quote(t.label) + "[MeSH Terms] OR " + headingPhrases(t.label).map((x) => quote(x) + "[Title/Abstract]").join(" OR ") + ")";
@@ -723,7 +756,7 @@ function headingPhrases(label) {
   const words = natural.split(/\s+/), end = words[words.length - 1];
   let one = "";
   if (end.length > 4 && /ies$/i.test(end)) one = end.slice(0, -3) + "y";
-  else if (end.length > 3 && /s$/i.test(end) && !/(ss|us|is)$/i.test(end)) one = end.slice(0, -1);
+  else if (end.length > 3 && /s$/i.test(end) && !/(ss|us|is|ics)$/i.test(end)) one = end.slice(0, -1);
   if (one) out.push(words.slice(0, -1).concat(one).join(" "));
   return out;
 }
@@ -740,12 +773,12 @@ function buildQuery(cfg, terms, fromDate) {
 function parseName(name) {
   const tokens = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (!tokens.length) return null;
-  if (tokens.length >= 3 && /^(Jr|Sr|2nd|3rd|4th|II|III|IV)\.?$/.test(tokens[tokens.length - 1]) && /^[A-Z]{1,4}$/.test(tokens[tokens.length - 2])) tokens.pop();
+  if (tokens.length >= 3 && /^(Jr|Sr|Junior|Senior|2nd|3rd|4th|II|III|IV|MD|PhD)\.?$/.test(tokens[tokens.length - 1]) && /^\p{Lu}{1,4}$/u.test(tokens[tokens.length - 2].normalize("NFC"))) tokens.pop();
   let initials = "";
-  if (tokens.length >= 2 && /^[A-Z]{1,5}$/.test(tokens[tokens.length - 1])) initials = tokens.pop();
+  if (tokens.length >= 2 && /^\p{Lu}{1,6}$/u.test(tokens[tokens.length - 1].normalize("NFC"))) initials = tokens.pop();   // initials can be letters such as Ø or Š
   const surnameNorm = letters(tokens.join(" "));
   if (!surnameNorm) return null;
-  const firstInitial = initials ? initials[0].toLowerCase() : "";
+  const firstInitial = letters(initials)[0] || "";
   return { surnameNorm, firstInitial, key: surnameNorm + "|" + firstInitial };
 }
 function tally(papers, position, designIds, minOwn) {
@@ -824,7 +857,7 @@ async function fetchRecords(pmids, onProgress) {
   }
 }
 function nodeMatches(a, g) {
-  return letters(a.last) === g.surnameNorm && ((a.initials || a.fore || "")[0] || "").toLowerCase() === g.firstInitial;
+  return letters(a.last) === g.surnameNorm && (letters(a.initials || a.fore || "")[0] || "") === g.firstInitial;
 }
 function foreTokens(fore) {
   return String(fore || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -862,23 +895,30 @@ function clusterGroup(g) {
   const clusters = [];
   const fits = (c, it) => {
     if (it.node.orcid && c.orcid && it.node.orcid !== c.orcid) return false;
+    const a = c.inits, b = letters(it.node.initials);
+    if (a && b && !(a.startsWith(b) || b.startsWith(a))) return false;      // "J H" does not belong with "Jin-Soo" (J S)
     return namesCompatible(c.tokens, it.tokens);
   };
   const put = (c, it) => {
     c.items.push(it);
     if (it.node.orcid && !c.orcid) c.orcid = it.node.orcid;
     if (it.tokens.join("").length > c.tokens.join("").length) c.tokens = it.tokens;
+    const b = letters(it.node.initials);
+    if (b.length > c.inits.length) c.inits = b;
   };
   for (const it of full) {
     let home = it.node.orcid ? clusters.find((c) => c.orcid === it.node.orcid) : null;
-    if (!home) home = clusters.find((c) => fits(c, it));
-    if (!home) { home = { tokens: it.tokens, orcid: "", items: [], initialsOnly: false }; clusters.push(home); }
+    if (!home) {                                                             // a name that fits two people equally stays on its own
+      const homes = clusters.filter((c) => fits(c, it));
+      home = homes.find((c) => c.tokens.join(" ") === it.tokens.join(" ")) || (homes.length === 1 ? homes[0] : null);
+    }
+    if (!home) { home = { tokens: it.tokens, orcid: "", inits: "", items: [], initialsOnly: false }; clusters.push(home); }
     put(home, it);
   }
   for (const it of brief) {
     const homes = clusters.filter((c) => fits(c, it));
     if (homes.length === 1) put(homes[0], it);
-    else if (homes.length === 0) { const c = { tokens: it.tokens, orcid: "", items: [], initialsOnly: true }; clusters.push(c); put(c, it); }
+    else if (homes.length === 0) { const c = { tokens: it.tokens, orcid: "", inits: "", items: [], initialsOnly: true }; clusters.push(c); put(c, it); }
     // more than one possible home: the paper is left out, because the record does not say whose it is
   }
   // Papers past the reading limit for one name are left out, and the count then says "possibly more".
@@ -889,24 +929,26 @@ function clusterGroup(g) {
 const AFF_COMMON = new Set(("department departments division section unit school faculty college university universitat universite universidad universita universitaet "
   + "hospital hospitals hospitalario clinic clinical center centre centro institute institution instituto medicine medical medicina sciences science research "
   + "health healthcare care national general international group program programme laboratory service services servicio affiliated first second people peoples "
-  + "public graduate state city province district region republic kingdom united states electronic address email with from").split(" "));
+  + "public graduate state city province district region republic kingdom united states electronic address email with from "
+  + "and the for von der des del las los san new usa inc ltd").split(" "));
 function affWords(affs) {
   const words = new Set();
   for (const a of affs) {
     const parts = a.replace(EMAIL_RE, " ").replace(/\s*(electronic address|e-?mail(?: address)?)\s*:?\s*/gi, " ").split(",").map((x) => x.trim()).filter(Boolean);
     if (parts.length > 2) parts.pop();                                    // the last part is usually the country
-    for (const w of parts.join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^\p{L}]+/u)) if (w.length >= 4 && !AFF_COMMON.has(w)) words.add(w);
+    for (const w of parts.join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^\p{L}]+/u)) if (w.length >= 3 && !AFF_COMMON.has(w)) words.add(w);
   }
   return words;
 }
 function buildPerson(c, atLeast, crowded) {
   const seen = new Set(), seenTitle = new Set();
-  const titleKey = (t) => letters(String(t || "").replace(/^\s*\[translated article\]\s*/i, ""));
+  const titleKey = (i) => String(i.paper.title || "").replace(/^\s*\[translated article\]\s*/i, "").normalize("NFD").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "")
+    + "|" + (i.paper.all ? i.paper.all.length : 0);
   const items = c.items.filter((i) => (seen.has(i.paper.pmid) ? false : (seen.add(i.paper.pmid), true)))
     .sort((a, b) => newerFirst(a.paper.sort, b.paper.sort))
     .filter((i) => {                                                      // the same paper printed twice, such as a translation, counts once
-      const k = titleKey(i.paper.title);
-      if (k.length < 20) return true;
+      const k = titleKey(i);
+      if (k.length < 24) return true;
       return seenTitle.has(k) ? false : (seenTitle.add(k), true);
     });
   const withNode = items.filter((i) => i.node);
@@ -921,8 +963,10 @@ function buildPerson(c, atLeast, crowded) {
   for (const it of withNode) {
     const text = it.node.affs.join(" ");
     if (!affiliation && it.node.affs.length) {
-      const shown = it.node.affs[0].replace(/\s*(electronic address|e-?mail(?: address)?)\s*:?\s*/gi, " ").replace(EMAIL_RE, "")
+      const tidy = (a) => a.replace(/\s*(electronic address|e-?mail(?: address)?)\s*:?\s*/gi, " ").replace(EMAIL_RE, "").replace(/^\s*from the\s+/i, "")
         .replace(/\s+([.;,])/g, "$1").replace(/[\s.;,]+$/g, "").replace(/\s{2,}/g, " ").trim();
+      const parts = it.node.affs.map(tidy).filter(Boolean);
+      const shown = parts.slice(0, 2).join("; ") + (parts.length > 2 ? "; and " + (parts.length - 2) + " more on the record" : "");
       if (shown) affiliation = { text: shown, pmid: it.paper.pmid, year: it.paper.year };
     }
     if (!email) {
@@ -957,14 +1001,15 @@ function makeResolver(groups, designIds, minOwn) {
     if (!next) return true;
     const cut = orderPeople(R.people, !!designIds)[n - 1];
     if (!cut) return false;
-    if (designIds) return cut.designCount > next.dBound || (cut.designCount === next.dBound && cut.count >= next.bound);
-    return cut.count >= next.bound;
+    // People with the same number of papers are ordered by newest paper, so a tie is settled only when the unread name's newest paper is older.
+    const settled = cut.count > next.bound || (cut.count === next.bound && next.own[0].paper.sort < cut.items[0].paper.sort);
+    return designIds ? cut.designCount > next.dBound || (cut.designCount === next.dBound && settled) : settled;
   };
   R.ensure = async (n, onProgress) => {
     let rounds = 0;
-    while (!R.secure(n) && rounds < 4) {
+    while (!R.secure(n) && rounds < 12) {
       const batch = groups.slice(R.cursor, R.cursor + (R.cursor === 0 ? 60 : 40));
-      R.cursor += batch.length; rounds++;
+      rounds++;
       const want = new Set();
       for (const g of batch) {
         const picked = new Set();
@@ -978,7 +1023,9 @@ function makeResolver(groups, designIds, minOwn) {
         if (designIds) p.designCount = p.items.filter((i) => designIds.has(i.paper.pmid)).length;
         R.people.push(p);
       }
+      R.cursor += batch.length;        // moved only when the batch has been read, so a stopped or failed read loses nobody
     }
+    R.unsettled = !R.secure(n);
   };
   R.hasMore = (n) => orderPeople(R.people, !!designIds).length > n || R.cursor < groups.length;
   return R;
@@ -994,6 +1041,8 @@ function setProgress(fraction) {
   $("barFill").style.width = Math.max(3, Math.min(100, Math.round(fraction * 100))) + "%";
 }
 function setRunning(on) {
+  const act = document.activeElement;
+  const byKeyboard = on && act && act.tagName === "BUTTON" && act.matches(":focus-visible");
   state.running = on;
   $("runButton").disabled = on;
   $("runButton").textContent = on ? "Searching" : "Find candidates";
@@ -1001,12 +1050,13 @@ function setRunning(on) {
   $("resetButton").disabled = on;
   $("moreButton").disabled = on;
   $("stopButton").hidden = !on;
-  if (!on) state.stopped = false;
+  if (byKeyboard) $("stopButton").focus();
+  if (!on) { state.stopped = false; checkStale(); }
 }
 function clearResults() {
   $("results").hidden = true; $("summary").replaceChildren(); $("people").replaceChildren();
   $("actions").hidden = true; $("checks").hidden = true; $("moreRow").hidden = true; $("actionNote").textContent = "";
-  $("privacyNote").hidden = true; $("conflict").hidden = true; $("conflictNote").textContent = ""; $("staleNote").hidden = true; state.notes = null;
+  $("privacyNote").hidden = true; $("namesNote").hidden = true; $("conflict").hidden = true; $("conflictNote").textContent = ""; $("staleNote").hidden = true; state.notes = null;
   state.last = null; state.shown = SETTINGS.listSize; state.picked = new Set();
   updateTray();
 }
@@ -1015,16 +1065,17 @@ function stopBox(...paragraphs) { return el("div", { class: "stop" }, ...paragra
 // When a search is too narrow, work out which single change would give enough papers.
 async function showTooFew(count, cfg) {
   $("summary").append(stopBox(
-    "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
+    count === 0 ? "PubMed has no papers that match." : "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
     "The page needs at least " + SETTINGS.minPapers + ". With fewer, the list is too narrow to choose from and the entries may point to one study.",
+    cfg.terms.length > 1 ? "A paper must match every entry, so fewer entries find more papers." : null,
     count > 0 ? "You can still open these papers in PubMed with the link below and choose from them yourself." : null));
   $("results").hidden = false;
   setStatus("Checking which change would help.");
   const fixes = [];
   if (cfg.terms.length > 1) for (const t of cfg.terms) {
     const n = await countFor(buildQuery(cfg, cfg.terms.filter((x) => x.id !== t.id)));
-    if (n >= SETTINGS.minPapers) fixes.push({ n, label: "Search without " + termName(t) + " (" + fmt(n) + " papers)",
-      apply: () => { state.terms = state.terms.filter((x) => x.id !== t.id); renderChips(); } });
+    if (n >= SETTINGS.minPapers) fixes.push({ n, label: "Search without " + termName(t) + " (" + fmt(n) + (n > 3000 ? " papers, a much wider topic)" : " papers)"),
+      apply: () => { state.terms = state.terms.filter((x) => x.id !== t.id); state.dropNote = termName(t); renderChips(); } });
   }
   if (cfg.years < 10) {
     const n = await countFor(buildQuery(cfg, null, dateYearsAgo(10)));
@@ -1036,20 +1087,30 @@ async function showTooFew(count, cfg) {
     const ul = el("ul");
     fixes.sort((a, b) => a.n - b.n).forEach((f) => {
       const b = el("button", { type: "button", class: "secondary", text: f.label });
-      b.addEventListener("click", () => { f.apply(); run(); });
+      b.addEventListener("click", () => { f.apply(); run(true); });
       ul.append(el("li", null, b));
     });
     box.append(ul);
   } else {
-    box.append(el("p", { text: "No single change reaches " + SETTINGS.minPapers + " papers. Try broader terms." }));
+    box.append(el("p", { text: cfg.terms.some((t) => t.kind === "words")
+      ? "No single change reaches " + SETTINGS.minPapers + " papers. Remove the exact words entry, then type one word and choose a heading."
+      : "No single change reaches " + SETTINGS.minPapers + " papers. Try broader headings." }));
   }
   $("summary").append(box);
 }
 
-async function run() {
+// A shortlist is lost when the list is replaced, so ask first.
+function mayClearShortlist(what) {
+  const n = state.last ? pickedPeople().length : 0;
+  return !n || window.confirm(what + " clears your shortlist of " + n + (n === 1 ? " person" : " people") + ". Continue?");
+}
+function toResults() { $("resultsHead").focus({ preventScroll: true }); $("resultsHead").scrollIntoView({ block: "start" }); }
+async function run(asked) {
   if (state.running) return;
+  const dropped = state.dropNote; state.dropNote = "";
   if (leftoverNote()) { $("termInput").focus(); return; }
   if (!state.terms.length) { setTermNote("Choose at least one MeSH heading from the list first.", true); $("termInput").focus(); return; }
+  if (!asked && !mayClearShortlist("A new search")) return;
   clearResults(); setRunning(true);
   try {
     const cfg = readForm(), sig = formSignature();
@@ -1064,7 +1125,7 @@ async function run() {
     if (count < SETTINGS.minPapers) {
       await showTooFew(count, cfg);
       if (count > 0) { $("pubmedLink").href = pubmedUrl; $("copyButton").hidden = true; $("csvButton").hidden = true; $("actions").hidden = false; }
-      setStatus(""); setProgress(null); $("resultsHead").focus();
+      setStatus(""); setProgress(null); toResults();
       return;
     }
 
@@ -1090,7 +1151,7 @@ async function run() {
         const persons = x.authors.filter((a) => a && a.authtype === "Author" && a.name).map((a) => a.name);
         if (!persons.length) continue;
         const sort = x.sortpubdate || "";
-        papers.push({ pmid: String(uid), title: cleanTitle(x.title), source: x.source || "", sort, year: sort.slice(0, 4) || String(x.pubdate || "").slice(0, 4),
+        papers.push({ pmid: String(uid), title: cleanTitle(x.title || x.booktitle || ""), source: x.source || "", sort, year: sort.slice(0, 4) || String(x.pubdate || "").slice(0, 4),
                       first: persons[0], last: persons[persons.length - 1], solo: persons.length === 1, all: persons });
       }
     }
@@ -1103,43 +1164,53 @@ async function run() {
       setStatus("Checking names against the full records: " + fmt(done) + " of " + fmt(total) + "."); setProgress(0.62 + 0.35 * (done / total));
     });
 
-    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, designCount, resolver, minOwn, sig };
+    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, designCount, resolver, minOwn, sig, dropped };
     setProgress(1);
     render();
     setStatus("");
-    $("resultsHead").focus();
+    toResults();
   } catch (e) {
     clearResults();
     if (e && e.message === "stopped") { setStatus("Search stopped."); return; }
-    $("summary").append(stopBox(
+    const box = stopBox(
       e && e.message === "network" ? "PubMed did not answer. Check your connection, wait a minute and search again."
                                    : "PubMed returned an error. Wait a minute and search again.",
-      "Nothing was saved or sent anywhere else."));
-    $("results").hidden = false; setStatus(""); $("resultsHead").focus();
+      "Nothing was saved or sent anywhere else.");
+    box.setAttribute("tabindex", "-1"); box.setAttribute("role", "alert");
+    $("summary").append(box);
+    $("results").hidden = false; setStatus(""); box.focus();
   } finally {
     setRunning(false);
     setTimeout(() => setProgress(null), 400);
+    if (document.activeElement === document.body || document.activeElement === $("stopButton")) $("runButton").focus();   // after Stop, the keyboard stays on the form
   }
 }
 async function showMore() {
   const L = state.last;
   if (!L || state.running) return;
+  let back = false;
   setRunning(true);
   try {
     state.shown += SETTINGS.listSize;
     $("actionNote").textContent = "Checking more names.";
     const before = $("people").children.length;
-    await L.resolver.ensure(state.shown);
+    for (let tries = 0; tries < 6; tries++) {                              // a round can read names that all fall short, so read on until someone is added
+      await L.resolver.ensure(state.shown);
+      if (allPeople().length > before || !L.resolver.hasMore(before)) break;
+    }
     render();
     const now = $("people").children.length;
     $("actionNote").textContent = now > before ? "The list now shows " + now + " people." : "Nobody is left to add.";
     const firstNew = $("people").children[before];
     if (firstNew) { const h = firstNew.querySelector("h3"); h.setAttribute("tabindex", "-1"); h.focus(); }
+    else toResults();
   } catch (e) {
     state.shown -= SETTINGS.listSize;
     $("actionNote").textContent = e && e.message === "stopped" ? "Stopped." : "PubMed did not answer. Wait a minute and press the button again.";
+    back = true;
   } finally {
     setRunning(false);
+    if (back && !$("moreRow").hidden) $("moreButton").focus();
   }
 }
 
@@ -1166,10 +1237,12 @@ function render() {
   const exact = L.resolver.cursor >= L.resolver.groups.length;
   const few = L.minOwn === 1;
   const onWhat = few ? " on at least one of them" : " on at least two of them";
-  if (few) summary.append(el("p", { class: "flag", text: "Only " + fmt(L.count) + " papers match, so treat this as a short list. It includes people with one matching paper. Several entries may come from the same study." }));
+  if (few) summary.append(el("p", { class: "flag", text: "Only " + fmt(L.count) + " papers match, so the choice is narrow. The list includes people with one matching paper. Several entries may come from the same study." }));
+  if (L.dropped) summary.append(el("p", { class: "flag", text: "You removed " + L.dropped + " to get enough papers. People on this list may have no paper on it." }));
+  if (L.resolver.unsettled) summary.append(el("p", { class: "flag", text: "Many people have the same number of papers here, and the page stopped reading before the order was settled. Someone with as many papers as the last people shown may be missing. Add an entry to narrow the search." }));
   if (!shown.length) {
     summary.append(stopBox("Nobody is " + positionWords(L.cfg) + (few ? " on these papers." : " on two or more of these papers."), "Remove an entry, widen the period or change the author position."));
-  } else if (exact && total <= SETTINGS.listSize) {
+  } else if (exact && total < SETTINGS.listSize) {
     summary.append(el("p", { text: "Only " + total + (total === 1 ? " person is " : " people are ") + positionWords(L.cfg) + onWhat + ", so the list is shorter than " + SETTINGS.listSize + ". Remove an entry or widen the period to see more." }));
   } else {
     summary.append(el("p", { text: (exact ? "" : "About ") + fmt(total) + " people are " + positionWords(L.cfg) + onWhat + ". The list shows the top " + shown.length + "." }));
@@ -1180,15 +1253,29 @@ function render() {
   $("copyButton").hidden = false;
   $("csvButton").hidden = !shown.length;
   $("privacyNote").hidden = !shown.length;
+  $("namesNote").hidden = !shown.length;
+  $("printLine").textContent = "Searched: " + L.cfg.terms.map(termName).join(", ") + ". Last " + L.cfg.years + " years. " + L.cfg.today + ".";
   $("checks").hidden = !shown.length;
   $("conflict").hidden = !shown.length;
   $("moreRow").hidden = !(shown.length && L.resolver.hasMore(state.shown));
 
   const notes = linkNotes(shown);
   state.notes = notes;
-  const typed = conflictNames().length, marked = shown.filter((p) => { const n = notes.get(p.id); return n.self || n.withAuthors.size; }).length;
-  $("conflictNote").textContent = !typed ? "" : marked ? marked + " of " + shown.length + (marked === 1 ? " entries is" : " entries are") + " marked. The check covers the papers listed here, so check other links yourself."
-                                                        : "No entry on this list is marked. The check covers the papers listed here, so check other links yourself.";
+  // Say what each typed name matched, so a slip in the spelling shows.
+  const numbers = (hits) => hits.map((p) => shown.indexOf(p) + 1).sort((a, b) => a - b);
+  $("conflictNote").textContent = !notes.names.length ? "" : notes.names.map((n) => {
+    const at = numbers(n.hits);
+    return n.typed + ": " + (at.length ? (at.length === 1 ? "number " + at[0] : "numbers " + at.slice(0, -1).join(", ") + " and " + at[at.length - 1]) : "no match");
+  }).join(". ") + ". The check covers the papers listed here, so check other links yourself.";
+  // How many separate groups of co-authors the people shown fall into.
+  const seen = new Set(); let groupCount = 0;
+  for (const p of shown) {
+    if (seen.has(p)) continue;
+    groupCount++;
+    const stack = [p];
+    while (stack.length) { const x = stack.pop(); if (seen.has(x)) continue; seen.add(x); notes.get(x.id).withOthers.forEach((q) => stack.push(q)); }
+  }
+  if (shown.length > 2 && groupCount < shown.length) summary.append(el("p", { text: "By the papers listed here, the " + shown.length + " people shown fall into " + groupCount + (groupCount === 1 ? " group" : " groups") + " of co-authors. Inviting co-authors together may give one group's view twice." }));
   const list = $("people");
   list.replaceChildren();
   let divided = false;
@@ -1226,19 +1313,19 @@ function sameAuthor(a, p) {
   return letters(a.last) === p.surnameNorm && namesCompatible(foreTokens(a.fore || (a.initials || "").split("").join(" ")), p.tokens) && !(a.orcid && p.orcid && a.orcid !== p.orcid);
 }
 function conflictNames() {
-  return $("conflictInput").value.split(/[,;\n]+/).map((x) => x.trim()).filter(Boolean).map((x) => {
+  return $("conflictInput").value.split(/[,;\n&]+|\s+and\s+/i).map((x) => x.trim()).filter(Boolean).map((x) => {
     const tokens = x.split(/\s+/);
     let initial = "";
-    if (tokens.length >= 2 && /^[A-Z]{1,4}\.?$/.test(tokens[tokens.length - 1])) initial = tokens.pop()[0].toLowerCase();
+    if (tokens.length >= 2 && /^\p{Lu}{1,4}\.?$/u.test(tokens[tokens.length - 1].normalize("NFC"))) initial = letters(tokens.pop())[0] || "";
     const forms = new Set([letters(tokens.join(" "))]);
     if (tokens.length >= 2) { forms.add(letters(tokens[tokens.length - 1])); forms.add(letters(tokens.slice(1).join(" "))); }
     forms.delete("");
-    return { forms, initial };
+    return { forms, initial, typed: x, hits: [] };
   }).filter((n) => [...n.forms].some((f) => f.length >= 2));
 }
 function linkNotes(shown) {
   const names = conflictNames();
-  const hit = (a) => names.some((n) => n.forms.has(letters(a.last)) && (!n.initial || ((a.initials || a.fore || "")[0] || "").toLowerCase() === n.initial));
+  const match = (a) => names.filter((n) => n.forms.has(letters(a.last)) && (!n.initial || (letters(a.initials || a.fore || "")[0] || "") === n.initial));
   const notes = new Map();
   for (const p of shown) {
     const withOthers = [], withAuthors = new Map();
@@ -1248,12 +1335,16 @@ function linkNotes(shown) {
       for (const a of rec.authors) {
         if (p.ownNodes.has(a)) continue;
         for (const q of shown) if (q !== p && q.surnameNorm && sameAuthor(a, q) && !withOthers.includes(q)) withOthers.push(q);
-        if (names.length && hit(a)) { const k = ((a.fore || a.initials || "") + " " + a.last).trim(); if (!withAuthors.has(k)) withAuthors.set(k, it.paper.pmid); }
+        const m = names.length ? match(a) : [];
+        if (m.length) { const k = ((a.fore || a.initials || "") + " " + a.last).trim(); if (!withAuthors.has(k)) withAuthors.set(k, it.paper.pmid); m.forEach((n) => { if (!n.hits.includes(p)) n.hits.push(p); }); }
       }
     }
-    const self = names.length > 0 && p.surnameNorm && names.some((n) => n.forms.has(p.surnameNorm) && (!n.initial || (p.tokens[0] || "")[0] === n.initial));
-    notes.set(p.id, { withOthers, withAuthors, self });
+    const own = p.surnameNorm ? names.filter((n) => n.forms.has(p.surnameNorm) && (!n.initial || (p.tokens[0] || "")[0] === n.initial)) : [];
+    own.forEach((n) => { if (!n.hits.includes(p)) n.hits.push(p); });
+    notes.set(p.id, { withOthers, withAuthors, self: own.length > 0 });
   }
+  for (const p of shown) for (const q of notes.get(p.id).withOthers) { const back = notes.get(q.id).withOthers; if (!back.includes(p)) back.push(p); }
+  notes.names = names;
   return notes;
 }
 function personEntry(p, rank, L, note) {
@@ -1297,12 +1388,12 @@ function personEntry(p, rank, L, note) {
   }
   if (note && note.withOthers.length) {
     const who = note.withOthers.map((q) => q.name);
-    body.append(el("p", { class: "pair", text: "Has written a listed paper with " + (who.length > 1 ? who.slice(0, -1).join(", ") + " and " + who[who.length - 1] + ", who are" : who[0] + ", who is") + " also on this list. If you invite both, you may get one group's view twice." }));
+    body.append(el("p", { class: "pair", text: "Has written a listed paper with " + (who.length > 1 ? who.slice(0, -1).join(", ") + " and " + who[who.length - 1] + ", who are" : who[0] + ", who is") + " also on this list." }));
   }
   if (p.initialsOnly) body.append(el("p", { class: "flag", text: "Check this name. PubMed gives initials only for these papers, so this entry may combine more than one person." }));
   else if (p.crowded) body.append(el("p", { class: "flag", text: "Several people in PubMed share this surname and first initial. Check the affiliation on each paper." }));
 
-  const head = p.items.slice(0, 3), rest = p.items.slice(3);
+  const head = p.items.slice(0, 2), rest = p.items.slice(2);
   const papers = el("ul", { class: "papers" });
   head.forEach((it) => papers.append(paperItem(it)));
   body.append(papers);
@@ -1313,7 +1404,7 @@ function personEntry(p, rank, L, note) {
   }
   if (p.authorTerm) {
     const all = link(PUBMED + "?term=" + encodeURIComponent('"' + p.authorTerm + '"[Author]') + "&sort=date", "All papers under this name in PubMed");
-    all.setAttribute("aria-label", "All papers under the name " + p.authorTerm + " in PubMed");
+    all.setAttribute("aria-label", "All papers under this name in PubMed: " + p.authorTerm);
     body.append(el("p", { class: "allpapers" }, all));
   }
   li.append(el("div", { class: "rank", "aria-hidden": "true", text: String(rank) }), body);
@@ -1327,8 +1418,11 @@ function updateTray() {
   const n = state.last ? pickedPeople().length : 0;
   $("tray").hidden = n === 0;
   document.body.classList.toggle("has-tray", n > 0);
-  document.body.style.paddingBottom = n > 0 ? ($("tray").offsetHeight + 16) + "px" : "";   // room for the bar, whatever its height
-  $("trayText").textContent = n === 1 ? "1 person on your shortlist" : n + " people on your shortlist";
+  const room = n > 0 ? ($("tray").offsetHeight + 16) + "px" : "";
+  document.body.style.paddingBottom = room;                                // room for the bar, whatever its height
+  document.documentElement.style.scrollPaddingBottom = room;               // so the bar never covers the control in use
+  const marked = n && state.notes ? pickedPeople().filter((p) => { const x = state.notes.get(p.id); return x && (x.self || x.withAuthors.size); }).length : 0;
+  $("trayText").textContent = (n === 1 ? "1 person on your shortlist" : n + " people on your shortlist") + (marked ? ". " + marked + (marked === 1 ? " has" : " have") + " a possible conflict" : "");
 }
 function shortlistText() {
   return pickedPeople().map((p) => [
@@ -1359,14 +1453,17 @@ function searchRecord() {
     "PubMed query: " + L.query
   ].join("\n");
 }
+function fileStamp() { const d = new Date(); return state.last.cfg.today + "-" + pad(d.getHours()) + pad(d.getMinutes()); }
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); return true; }
   catch (e) {
+    const from = document.activeElement;
     const ta = el("textarea", { style: "position:fixed;left:-999px;top:0" });
     ta.value = text; document.body.append(ta); ta.select();
     let ok = false;
     try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
     ta.remove();
+    if (from && from.focus) from.focus();
     return ok;
   }
 }
@@ -1406,13 +1503,13 @@ function download(text, filename) {
 $("journalLine").textContent = SETTINGS.journalLine;
 $("journalLine").hidden = !SETTINGS.journalLine;
 DESIGNS.forEach((d) => $("designSelect").append(el("option", { value: d.id, text: d.label })));
-$("searchForm").addEventListener("submit", (e) => { e.preventDefault(); run(); });
+$("searchForm").addEventListener("submit", (e) => { e.preventDefault(); run(false); });
 $("exampleButton").addEventListener("click", () => {
-  if (state.running) return;
+  if (state.running || !mayClearShortlist("The example search")) return;
   state.terms = EXAMPLE.map((t) => Object.assign({}, t));
   $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
   $("termInput").value = ""; closeSuggestions(); setTermNote(""); renderChips();
-  run();
+  run(true);
 });
 $("moreButton").addEventListener("click", showMore);
 $("copyButton").addEventListener("click", async () => {
@@ -1422,7 +1519,7 @@ $("copyButton").addEventListener("click", async () => {
 });
 $("csvButton").addEventListener("click", () => {
   if (!state.last) return;
-  download(buildCsv(shownPeople(), false), "reviewer-candidates-" + state.last.cfg.today + ".csv");
+  download(buildCsv(shownPeople(), false), "reviewer-candidates-" + fileStamp() + ".csv");
   $("actionNote").textContent = "List downloaded.";
 });
 $("trayCopy").addEventListener("click", async () => {
@@ -1433,14 +1530,16 @@ $("trayCopy").addEventListener("click", async () => {
 });
 $("trayCsv").addEventListener("click", () => {
   if (!state.last) return;
-  download(buildCsv(pickedPeople(), true), "reviewer-shortlist-" + state.last.cfg.today + ".csv");
+  download(buildCsv(pickedPeople(), true), "reviewer-shortlist-" + fileStamp() + ".csv");
+  $("trayText").textContent = "Shortlist downloaded";
+  setTimeout(updateTray, 2500);
 });
 window.addEventListener("resize", () => { if (!$("tray").hidden) updateTray(); });
 ["designSelect", "positionSelect", "yearsSelect", "excludeBox"].forEach((id) => $(id).addEventListener("change", checkStale));
 $("stopButton").addEventListener("click", () => { if (!state.running) return; state.stopped = true; if (liveCtrl) liveCtrl.abort(); setStatus("Stopping."); });
 $("resetButton").addEventListener("click", () => {
-  if (state.running) return;
-  state.terms = []; $("termInput").value = ""; closeSuggestions(); setTermNote("");
+  if (state.running || !mayClearShortlist("A new search")) return;
+  state.terms = startTerms(); state.dropNote = ""; $("termInput").value = ""; closeSuggestions(); setTermNote("");
   $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
   $("conflictInput").value = "";
   clearResults(); renderChips(); setStatus("");
@@ -1448,10 +1547,18 @@ $("resetButton").addEventListener("click", () => {
 });
 let conflictTimer = null;
 $("conflictInput").addEventListener("input", () => { clearTimeout(conflictTimer); conflictTimer = setTimeout(() => { if (state.last && !state.running) render(); }, 300); });
-$("trayClear").addEventListener("click", () => { state.picked = new Set(); if (state.last) render(); else updateTray(); });
+$("trayClear").addEventListener("click", () => {
+  const n = state.last ? pickedPeople().length : 0;
+  if (n > 1 && !window.confirm("Clear your shortlist of " + n + " people?")) return;
+  state.picked = new Set();
+  if (state.last) { render(); toResults(); } else updateTray();
+});
+$("termList").addEventListener("mousedown", (e) => e.preventDefault());       // a press inside the list keeps the cursor in the box
+$("termInput").addEventListener("focus", () => { if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) $("termInput").scrollIntoView({ block: "start" }); });
 renderChips();
 // On a computer, put the cursor in the term box so the editor can start typing at once.
-if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches) $("termInput").focus({ preventScroll: true });
+// Only when the box is in view, so the cursor is never somewhere the editor has not seen.
+if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches && $("termInput").getBoundingClientRect().bottom < window.innerHeight) $("termInput").focus({ preventScroll: true });
 </script>
 </body>
 </html>

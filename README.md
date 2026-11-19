@@ -21,7 +21,7 @@ Live page: https://amaclullich.github.io/reviewer-finder/
 
 Replace `index.html` with a new version. GitHub publishes the change within a few minutes.
 
-The settings are at the top of the script in `index.html`: the journal line, the minimum number of papers (20), the number below which a list is marked as short (50) and the list size (20).
+The settings are at the top of the script in `index.html`: the journal line, the minimum number of papers (20), the number below which a list is marked as short (50) and the list size (20). `startTerms` holds the entries already chosen when the page opens (Delirium). Set it to `[]` for none.
 
 ## Upkeep
 
