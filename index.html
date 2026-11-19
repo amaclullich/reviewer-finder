@@ -4,19 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="description" content="A PubMed search page that lists reviewer candidates for handling editors of the journal Delirium.">
 <!-- The browser enforces this rule: the page may contact only the two National Library of Medicine services named here. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://eutils.ncbi.nlm.nih.gov https://id.nlm.nih.gov; img-src data:; base-uri 'none'; form-action 'none'">
 <title>Reviewer candidate finder</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f4c4a'/%3E%3Ccircle cx='14' cy='14' r='6.5' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l7 7' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%237030A0'/%3E%3Ccircle cx='14' cy='14' r='6.5' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l7 7' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
+  /* Colours follow the journal: the purple of its site banner and the navy of its badge. */
   :root {
     --paper: #ffffff;
-    --ink: #1d2b2a;
-    --muted: #4d5f5e;
-    --teal: #0f4c4a;
-    --teal-deep: #0a3836;
-    --tint: #e9f1f0;
-    --rule: #c9d4d3;
+    --purple: #7030a0;
+    --purple-deep: #56227e;
+    --purple-mid: #8c3fc5;
+    --navy: #1d3557;
+    --ink: #1b2536;
+    --muted: #55607a;
+    --tint: #f4eefa;
+    --rule: #d8d0e3;
+    --gold: #e0a100;
     --note-ink: #6b4200;
     --note-bg: #fff4d6;
     --stop-ink: #7a1f1f;
@@ -26,149 +32,198 @@
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--sans);
-    font-size: 1.0625rem;
-    line-height: 1.55;
-  }
-  .page { max-width: 50rem; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
-  h1, h2, h3 { font-family: var(--serif); color: var(--teal); font-weight: 400; line-height: 1.2; margin: 0; }
-  h1 { font-size: 2.6rem; letter-spacing: -0.01em; }
-  h2 { font-size: 1.7rem; margin-top: 3rem; }
-  h3 { font-size: 1.3rem; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 1.0625rem; line-height: 1.55; }
+  body.has-tray { padding-bottom: 5.5rem; }
+  .wrap { max-width: 56rem; margin: 0 auto; padding: 0 1.5rem; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 400; line-height: 1.2; margin: 0; }
+  h2 { font-size: 1.8rem; color: var(--navy); }
+  h3 { font-size: 1.3rem; color: var(--navy); }
   p { margin: 0.75rem 0 0; max-width: 42rem; }
-  a { color: var(--teal); text-underline-offset: 0.15em; }
-  a:hover { color: var(--teal-deep); }
-  :focus-visible { outline: 3px solid #e0a100; outline-offset: 2px; }
+  a { color: var(--purple); text-underline-offset: 0.15em; }
+  a:hover { color: var(--purple-deep); }
+  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  [hidden] { display: none !important; }
 
-  .journal { font-family: var(--serif); font-style: italic; color: var(--muted); margin: 0 0 0.5rem; }
-  .lede { font-size: 1.2rem; line-height: 1.5; margin-top: 1rem; }
-  .steps { margin: 1rem 0 0; padding-left: 1.4rem; max-width: 42rem; font-size: 1.1rem; }
-  .steps li { margin-top: 0.45rem; padding-left: 0.25rem; }
-  .steps li::marker { font-family: var(--serif); color: var(--teal); }
+  /* Masthead */
+  .mast { background: var(--purple); color: #fff; border-bottom: 0.4rem solid var(--purple-mid); }
+  .mast .wrap { display: grid; grid-template-columns: auto 1fr; gap: 1.75rem; align-items: center; padding-top: 2.5rem; padding-bottom: 2.5rem; }
+  .mast img { width: 7.5rem; height: 7.5rem; display: block; }
+  .mast h1 { color: #fff; font-size: clamp(2.1rem, 5.2vw, 3.3rem); letter-spacing: -0.01em; }
+  .journal { font-family: var(--serif); font-style: italic; color: #eadcf5; margin: 0 0 0.35rem; font-size: 1.1rem; }
+  .lede { font-size: 1.2rem; line-height: 1.45; margin-top: 0.7rem; color: #fff; }
 
-  .keepout { background: var(--tint); border-left: 0.35rem solid var(--teal); padding: 1.1rem 1.25rem 1.25rem; margin-top: 2rem; }
-  .keepout h2 { font-size: 1.3rem; margin-top: 0; }
+  /* Three steps */
+  .steps { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+  .steps li { border-top: 3px solid var(--purple); padding-top: 0.8rem; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr; align-items: start; gap: 0.15rem 0.9rem; }
+  .steps .num { font-family: var(--serif); font-size: 2.8rem; line-height: 1; color: var(--navy); grid-row: span 2; }
+  .steps strong { font-family: var(--serif); font-weight: 400; font-size: 1.25rem; color: var(--navy); padding-top: 0.2rem; }
+  .steps span.what { color: var(--ink); font-size: 1rem; }
 
-  form { margin-top: 2.5rem; }
+  .keepout { background: var(--tint); border-left: 0.4rem solid var(--purple); padding: 1.1rem 1.4rem 1.3rem; margin-top: 2.5rem; }
+  .keepout h2 { font-size: 1.35rem; }
+
+  /* Form */
+  form { margin-top: 2.75rem; }
   fieldset { border: 0; padding: 0; margin: 0 0 2rem; min-width: 0; }
-  legend, .field-label { font-family: var(--serif); font-size: 1.3rem; color: var(--teal); padding: 0; display: block; }
+  legend, .field-label { font-family: var(--serif); font-size: 1.35rem; color: var(--navy); padding: 0; display: block; }
   .hint { color: var(--muted); font-size: 0.975rem; margin-top: 0.35rem; }
   input[type="text"], select {
-    font: inherit; color: var(--ink); background: #fff;
-    border: 1.5px solid var(--ink); border-radius: 3px;
-    padding: 0.6rem 0.7rem; width: 100%; max-width: 30rem; margin-top: 0.7rem;
+    font: inherit; color: var(--ink); background: #fff; border: 1.5px solid var(--navy); border-radius: 4px;
+    padding: 0.65rem 0.75rem; width: 100%; margin-top: 0.7rem;
   }
-  .combo { position: relative; max-width: 30rem; }
-  .suggestions {
-    list-style: none; margin: 0; padding: 0; position: absolute; left: 0; right: 0; top: 100%; z-index: 5;
-    background: #fff; border: 1.5px solid var(--ink); border-top: 0; max-height: 19rem; overflow: auto;
-  }
-  .suggestions li { padding: 0.5rem 0.7rem; cursor: pointer; }
-  .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--tint); }
-  .suggestions li.message { cursor: default; color: var(--muted); background: #fff; }
+  input[type="text"] { max-width: 34rem; font-size: 1.15rem; }
+  .combo { position: relative; max-width: 34rem; }
+  .suggestions { list-style: none; margin: 0; padding: 0; position: absolute; left: 0; right: 0; top: 100%; z-index: 5; background: #fff;
+    border: 1.5px solid var(--navy); border-top: 0; max-height: 21rem; overflow: auto; box-shadow: 0 10px 24px rgba(29, 53, 87, 0.16); }
+  .suggestions li { padding: 0.55rem 0.75rem; cursor: pointer; }
+  .suggestions li[aria-selected="true"], .suggestions li[role="option"]:hover { background: var(--tint); }
+  .suggestions li.message { cursor: default; color: var(--muted); }
+  .suggestions li.words { border-top: 1px solid var(--rule); color: var(--purple); position: sticky; bottom: 0; background: #fff; }
+  .suggestions li.words[aria-selected="true"], .suggestions li.words:hover { background: var(--tint); }
   .chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0.9rem 0 0; }
-  .chips li { display: flex; align-items: center; background: var(--teal); color: #fff; border-radius: 3px; padding: 0.3rem 0.3rem 0.3rem 0.75rem; }
-  .chips button { font: inherit; background: transparent; color: #fff; border: 0; cursor: pointer; padding: 0 0.5rem; font-size: 1.25rem; line-height: 1; }
-  .chips button:hover { color: #ffe08a; }
-  .check { display: flex; gap: 0.6rem; align-items: flex-start; max-width: 42rem; }
-  .check input { width: 1.2rem; height: 1.2rem; margin-top: 0.25rem; accent-color: var(--teal); flex: none; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem 1.5rem; max-width: 42rem; }
+  .chips li { display: flex; align-items: center; background: var(--purple); color: #fff; border: 1.5px solid var(--purple); border-radius: 4px; padding: 0.3rem 0.3rem 0.3rem 0.8rem; }
+  .chips li.words { background: #fff; color: var(--purple); }
+  .chips .kind { font-size: 0.85rem; margin-left: 0.45rem; color: var(--muted); }
+  .chips button { font: inherit; background: transparent; color: inherit; border: 0; cursor: pointer; padding: 0 0.5rem; font-size: 1.25rem; line-height: 1; }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem 1.5rem; }
   .row > div { display: flex; flex-direction: column; }
   .row .hint { margin-bottom: 0.7rem; }
   .row select { margin-top: auto; }
-  @media (max-width: 34rem) { .row { grid-template-columns: 1fr; } h1 { font-size: 2.1rem; } }
-
-  button.primary, button.secondary {
-    font: inherit; border-radius: 3px; cursor: pointer; padding: 0.7rem 1.25rem;
-    border: 1.5px solid var(--teal);
-  }
-  button.primary { background: var(--teal); color: #fff; font-size: 1.1rem; }
-  button.primary:hover { background: var(--teal-deep); }
-  button.primary:disabled { background: #8aa3a1; border-color: #8aa3a1; cursor: not-allowed; }
-  button.secondary { background: #fff; color: var(--teal); }
+  .check { display: flex; gap: 0.6rem; align-items: flex-start; max-width: 42rem; margin-top: 2rem; }
+  .check input { width: 1.2rem; height: 1.2rem; margin-top: 0.25rem; accent-color: var(--purple); flex: none; }
+  .go { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; margin-top: 2rem; max-width: none; }
+  button.primary, button.secondary { font: inherit; border-radius: 4px; cursor: pointer; padding: 0.7rem 1.3rem; border: 1.5px solid var(--purple); }
+  button.primary { background: var(--purple); color: #fff; font-size: 1.15rem; padding: 0.8rem 1.6rem; }
+  button.primary:hover { background: var(--purple-deep); border-color: var(--purple-deep); }
+  button.primary:disabled { background: #b9a3cc; border-color: #b9a3cc; cursor: not-allowed; }
+  button.secondary { background: #fff; color: var(--purple); }
   button.secondary:hover { background: var(--tint); }
-
+  button.secondary:disabled { color: #9a8fa8; border-color: #c9bfd6; cursor: not-allowed; background: #fff; }
+  button.plain { font: inherit; background: none; border: 0; padding: 0; color: var(--purple); text-decoration: underline; text-underline-offset: 0.15em; cursor: pointer; }
+  button.plain:disabled { color: #9a8fa8; cursor: not-allowed; }
   .status { margin-top: 1rem; min-height: 1.6rem; color: var(--muted); }
-  .stop { background: var(--stop-bg); color: var(--stop-ink); border-left: 0.35rem solid var(--stop-ink); padding: 1rem 1.25rem; margin-top: 1.5rem; max-width: 42rem; }
+  .bar { height: 0.35rem; background: var(--tint); border-radius: 1rem; overflow: hidden; max-width: 34rem; margin-top: 0.6rem; }
+  .bar span { display: block; height: 100%; width: 0; background: var(--purple); transition: width 0.3s ease; }
+  @media (prefers-reduced-motion: reduce) { .bar span { transition: none; } }
+
+  /* Results */
+  #results { margin-top: 3rem; padding-top: 2.5rem; border-top: 3px solid var(--purple); }
+  .stop { background: var(--stop-bg); color: var(--stop-ink); border-left: 0.4rem solid var(--stop-ink); padding: 1rem 1.25rem; margin-top: 1.5rem; max-width: 42rem; }
   .stop p:first-child { margin-top: 0; }
-
+  .fixes { margin-top: 1.25rem; max-width: 42rem; }
+  .fixes ul { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
   .actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; margin-top: 1.25rem; }
-  .order { margin: 1.5rem 0 0; }
-  .order label { margin-right: 1.25rem; white-space: nowrap; }
-  .order input { accent-color: var(--teal); }
-
-  .checks { border: 1.5px solid var(--teal); padding: 1.1rem 1.25rem 1.25rem; margin-top: 2rem; }
+  .checks { background: var(--tint); padding: 1.2rem 1.4rem 1.4rem; margin-top: 2rem; }
   .checks ol { margin: 0.6rem 0 0; padding-left: 1.3rem; max-width: 40rem; }
   .checks li { margin-top: 0.3rem; }
-
+  .flag { background: var(--note-bg); color: var(--note-ink); padding: 0.55rem 0.8rem; margin-top: 0.9rem; max-width: 40rem; }
   .people { list-style: none; padding: 0; margin: 2rem 0 0; border-bottom: 1px solid var(--rule); }
-  .person { display: grid; grid-template-columns: 3.75rem 1fr; border-top: 1px solid var(--rule); padding: 1.5rem 0 1.6rem; }
-  .rank { font-family: var(--serif); font-size: 2.4rem; line-height: 1; color: var(--teal); }
-  .person h3 { font-size: 1.5rem; }
-  .count { margin-top: 0.35rem; }
-  .facts { margin: 0.9rem 0 0; display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.35rem 1rem; }
+  .person { display: grid; grid-template-columns: 4rem 1fr; border-top: 1px solid var(--rule); padding: 1.6rem 0.75rem 1.7rem; }
+  .person.picked { background: var(--tint); box-shadow: inset 0.3rem 0 0 var(--purple); }
+  .rank { font-family: var(--serif); font-size: 2.6rem; line-height: 1; color: var(--navy); }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+  .person h3 { font-size: 1.55rem; }
+  .pick { display: inline-flex; align-items: center; gap: 0.45rem; border: 1.5px solid var(--purple); color: var(--purple); border-radius: 4px; padding: 0.3rem 0.7rem; font-size: 0.975rem; white-space: nowrap; cursor: pointer; background: #fff; }
+  .pick input { accent-color: var(--purple); width: 1.05rem; height: 1.05rem; margin: 0; }
+  .person.picked .pick { background: var(--purple); color: #fff; }
+  .count { margin-top: 0.4rem; }
+  .facts { margin: 0.9rem 0 0; display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.35rem 1rem; max-width: 46rem; }
   .facts dt { color: var(--muted); }
   .facts dd { margin: 0; overflow-wrap: anywhere; }
-  .flag { background: var(--note-bg); color: var(--note-ink); padding: 0.55rem 0.8rem; margin-top: 0.9rem; max-width: 40rem; }
-  .papers { margin: 1rem 0 0; padding-left: 1.2rem; max-width: 40rem; }
+  .papers { margin: 1rem 0 0; padding-left: 1.2rem; max-width: 42rem; }
   .papers li { margin-top: 0.4rem; }
   .papers .where { color: var(--muted); }
   details { margin-top: 0.6rem; }
-  summary { cursor: pointer; color: var(--teal); }
-  @media (max-width: 34rem) {
-    .person { grid-template-columns: 2.6rem 1fr; }
-    .rank { font-size: 1.8rem; }
+  summary { cursor: pointer; color: var(--purple); }
+  .allpapers { font-size: 0.975rem; }
+  .more { margin-top: 1.75rem; }
+
+  /* Shortlist tray */
+  .tray { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--navy); color: #fff; box-shadow: 0 -6px 20px rgba(29, 53, 87, 0.25); }
+  .tray .wrap { display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; align-items: center; padding-top: 0.85rem; padding-bottom: 0.85rem; }
+  .tray p { margin: 0 auto 0 0; font-family: var(--serif); font-size: 1.15rem; }
+  .tray button { font: inherit; border-radius: 4px; cursor: pointer; padding: 0.5rem 1rem; border: 1.5px solid #fff; background: #fff; color: var(--navy); }
+  .tray button.ghost { background: transparent; color: #fff; }
+
+  footer { margin-top: 4rem; padding-bottom: 3rem; color: var(--muted); font-size: 0.95rem; }
+  footer .line { border-top: 1px solid var(--rule); padding-top: 0.75rem; }
+
+  @media (max-width: 46rem) {
+    .mast .wrap { grid-template-columns: 1fr; gap: 1.1rem; padding-top: 1.75rem; padding-bottom: 1.9rem; }
+    .mast img { width: 5.25rem; height: 5.25rem; }
+    .steps { grid-template-columns: 1fr; gap: 1.25rem; }
+    .row { grid-template-columns: 1fr; }
+    .person { grid-template-columns: 2.7rem 1fr; padding-left: 0.4rem; padding-right: 0.4rem; }
+    .rank { font-size: 1.9rem; }
+    .head { flex-direction: column; gap: 0.6rem; }
     .facts { grid-template-columns: 1fr; gap: 0; }
     .facts dd { margin-bottom: 0.5rem; }
   }
-  footer { margin-top: 3.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.95rem; }
-  [hidden] { display: none !important; }
+  @media print {
+    .mast { background: #fff; color: #000; border: 0; }
+    .mast h1, .journal, .lede { color: #000; }
+    .steps, .keepout, form, .actions, .tray, .pick, .more, #actionNote { display: none !important; }
+    body.has-tray { padding-bottom: 0; }
+    .person { break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
-<div class="page">
 
-  <header>
-    <p class="journal" id="journalLine"></p>
-    <h1>Reviewer candidate finder</h1>
-    <p class="lede">You have a manuscript and need reviewers. This page finds candidates in a minute or two.</p>
-    <ol class="steps">
-      <li>Pick two or three topic terms for the manuscript's field.</li>
-      <li>Press Find candidates. The page searches PubMed and lists up to 20 people who have recently published on those terms as first or last author.</li>
-      <li>Check each person, then invite the ones you choose through the journal's system as usual.</li>
-    </ol>
-    <noscript><p class="stop">This page needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
-  </header>
+<header class="mast">
+  <div class="wrap">
+    <img src="data:image/png;base64,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" alt="Delirium journal badge" width="120" height="120">
+    <div>
+      <p class="journal" id="journalLine"></p>
+      <h1>Reviewer candidate finder</h1>
+      <p class="lede">You have a manuscript and need reviewers. This page finds candidates in PubMed in a minute or two.</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <ol class="steps" aria-label="How to use this page">
+    <li><span class="num" aria-hidden="true">1</span><strong>Pick topic terms</strong><span class="what">Two or three terms for the manuscript's field.</span></li>
+    <li><span class="num" aria-hidden="true">2</span><strong>Find candidates</strong><span class="what">The page lists up to 20 people who have recently published on those terms.</span></li>
+    <li><span class="num" aria-hidden="true">3</span><strong>Check and invite</strong><span class="what">Check each person, then invite through the journal's system as usual.</span></li>
+  </ol>
+  <noscript><p class="stop">This page needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
 
   <section class="keepout" aria-labelledby="keepoutHead">
     <h2 id="keepoutHead">Keep the manuscript out of this page</h2>
-    <p>Enter topic terms only. Leave out the title, the abstract, the findings and the authors' names.</p>
-    <p>The page sends your terms to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
+    <p>Enter topic terms and, if you need them, a few exact words such as the name of a tool or a drug. Leave out the title, the abstract, the findings and the authors' names.</p>
+    <p>The page sends your entries to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
   </section>
 
   <form id="searchForm" novalidate>
     <fieldset>
       <legend>Topic terms</legend>
-      <p class="hint" id="termHint">Type a word and pick a term from the list. For a manuscript on delirium after hip fracture surgery, you would pick Delirium and Hip Fractures. The terms come from MeSH, the subject headings that PubMed uses. A paper counts when it matches every term you pick, and the limit is five terms.</p>
+      <p class="hint" id="termHint">Type a word and pick a term from the list. For a manuscript on delirium after hip fracture surgery, you would pick Delirium and Hip Fractures. For a named tool, drug or method that the list lacks, pick the last option to search for the exact words. A paper counts when it matches every entry.</p>
       <div class="combo">
         <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
                placeholder="For example: delirium" role="combobox" aria-expanded="false"
                aria-controls="termList" aria-autocomplete="list" aria-describedby="termHint" aria-label="Find a topic term">
-        <ul class="suggestions" id="termList" role="listbox" aria-label="Matching MeSH terms" hidden></ul>
+        <ul class="suggestions" id="termList" role="listbox" aria-label="Matching terms" hidden></ul>
       </div>
-      <ul class="chips" id="chips" aria-label="Terms you have picked"></ul>
+      <ul class="chips" id="chips" aria-label="Entries you have picked"></ul>
       <p class="hint" id="termNote" role="status"></p>
     </fieldset>
 
     <div class="row">
       <div>
         <label class="field-label" for="designSelect">Study design</label>
-        <p class="hint">Optional. The list will show how many of each person's papers use this design.</p>
+        <p class="hint">Optional. People with papers of this design come first.</p>
         <select id="designSelect"></select>
+      </div>
+      <div>
+        <label class="field-label" for="positionSelect">Author position</label>
+        <p class="hint">First authors are often earlier in their careers.</p>
+        <select id="positionSelect">
+          <option value="either" selected>First or last author</option>
+          <option value="first">First author only</option>
+          <option value="last">Last author only</option>
+        </select>
       </div>
       <div>
         <label class="field-label" for="yearsSelect">Period</label>
@@ -181,12 +236,16 @@
       </div>
     </div>
 
-    <p class="check" style="margin-top:2rem">
+    <p class="check">
       <input type="checkbox" id="excludeBox" checked>
       <label for="excludeBox">Leave out letters, editorials, comments, corrections, retracted papers and preprints</label>
     </p>
 
-    <p style="margin-top:2rem"><button type="submit" class="primary" id="runButton" disabled>Find candidates</button></p>
+    <p class="go">
+      <button type="submit" class="primary" id="runButton" disabled>Find candidates</button>
+      <button type="button" class="plain" id="exampleButton">Try an example search</button>
+    </p>
+    <div class="bar" id="bar" hidden aria-hidden="true"><span id="barFill"></span></div>
     <p class="status" id="status" role="status" aria-live="polite"></p>
   </form>
 
@@ -200,18 +259,12 @@
     </div>
     <p class="hint" id="actionNote" role="status"></p>
 
-    <fieldset class="order" id="orderBox" hidden>
-      <legend class="hint" style="font-family:inherit;font-size:inherit;color:var(--ink)">Order the list by</legend>
-      <label><input type="radio" name="order" value="topic" checked> papers on the topic</label>
-      <label><input type="radio" name="order" value="design"> papers with the chosen design</label>
-    </fieldset>
-
     <section class="checks" id="checks" aria-labelledby="checksHead" hidden>
       <h3 id="checksHead">Before you invite anyone</h3>
       <ol>
         <li>Open a linked paper and confirm that this is the right person for the topic.</li>
         <li>If an email is shown, open the linked PubMed record and compare the address.</li>
-        <li>Check for conflicts with the manuscript's authors: shared papers in recent years, or the same institution.</li>
+        <li>Check for conflicts with the manuscript's authors: shared papers in recent years, or the same institution. The manuscript's own authors may appear in this list.</li>
         <li>Check the journal's records for recent invitations to the same person.</li>
         <li>Aim for a mix of career stage, country and discipline.</li>
       </ol>
@@ -219,13 +272,25 @@
     </section>
 
     <ol class="people" id="people"></ol>
+    <p class="more" id="moreRow" hidden><button type="button" class="secondary" id="moreButton">Show 20 more</button></p>
   </section>
+</main>
 
-  <footer>
-    <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-    <p>Version 1, November 2026.</p>
-  </footer>
+<div class="tray" id="tray" role="region" aria-label="Shortlist" hidden>
+  <div class="wrap">
+    <p id="trayText" role="status"></p>
+    <button type="button" id="trayCopy">Copy shortlist</button>
+    <button type="button" id="trayCsv">Download shortlist as CSV</button>
+    <button type="button" class="ghost" id="trayClear">Clear</button>
+  </div>
 </div>
+
+<footer>
+<div class="wrap"><div class="line">
+  <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
+  <p>Version 2, November 2026.</p>
+</div></div>
+</footer>
 
 <script>
 "use strict";
@@ -239,37 +304,45 @@ const SETTINGS = {
   toolName: "reviewer_candidate_finder",
   minPapers: 50,                 // the search stops below this number of matching papers
   maxPapersRead: 3000,           // the page reads at most this many of the most recent papers
-  listSize: 20,                  // people shown
-  minOwnPapers: 2,               // first or last author papers needed to qualify
-  maxTerms: 5
+  listSize: 20,                  // people shown at first, and added by "Show 20 more"
+  minOwnPapers: 2,               // papers in the chosen author position needed to qualify
+  maxTerms: 5,                   // entries in total
+  maxWordEntries: 2,             // of which exact word entries
+  maxWordLength: 40              // characters in one exact word entry
 };
 
 const DESIGNS = [
   { id: "", label: "Any design", query: "" },
-  { id: "rct", label: "Randomised controlled trial",
+  { id: "rct", label: "Randomised trial",
     query: '(randomized controlled trial[Publication Type] OR "Randomized Controlled Trials as Topic"[MeSH Terms])' },
-  { id: "obs", label: "Cohort or observational study",
+  { id: "obs", label: "Cohort or observational",
     query: '("Cohort Studies"[MeSH Terms] OR "Case-Control Studies"[MeSH Terms] OR "Cross-Sectional Studies"[MeSH Terms] OR observational study[Publication Type])' },
-  { id: "dta", label: "Diagnostic test accuracy",
+  { id: "dta", label: "Diagnostic accuracy",
     query: '("Sensitivity and Specificity"[MeSH Terms] OR "diagnostic accuracy"[Title/Abstract] OR "Diagnostic Tests, Routine"[MeSH Terms])' },
-  { id: "sr", label: "Systematic review or meta-analysis",
+  { id: "sr", label: "Systematic review",
     query: '(systematic review[Publication Type] OR meta-analysis[Publication Type] OR "systematic review"[Title])' },
-  { id: "qual", label: "Qualitative study",
+  { id: "qual", label: "Qualitative",
     query: '("Qualitative Research"[MeSH Terms] OR qualitative[Title/Abstract] OR "Interviews as Topic"[MeSH Terms])' },
-  { id: "routine", label: "Routine data or registry study",
+  { id: "routine", label: "Routine data or registry",
     query: '("Routinely Collected Health Data"[MeSH Terms] OR "Registries"[MeSH Terms] OR "Electronic Health Records"[MeSH Terms] OR "record linkage"[Title/Abstract])' },
-  { id: "qi", label: "Quality improvement or implementation",
+  { id: "qi", label: "Quality improvement",
     query: '("Quality Improvement"[MeSH Terms] OR "Implementation Science"[MeSH Terms] OR "quality improvement"[Title/Abstract] OR implementation[Title])' },
-  { id: "pred", label: "Prediction model or machine learning",
+  { id: "pred", label: "Prediction model or AI",
     query: '("Machine Learning"[MeSH Terms] OR "Clinical Decision Rules"[MeSH Terms] OR "prediction model"[Title/Abstract])' },
-  { id: "bio", label: "Biomarker or laboratory study",
+  { id: "bio", label: "Biomarker or laboratory",
     query: '("Biomarkers"[MeSH Terms] OR biomarker*[Title/Abstract])' }
+];
+
+const EXAMPLE = [
+  { kind: "mesh", label: "Delirium", id: "D003693" },
+  { kind: "mesh", label: "Hip Fractures", id: "D006620" }
 ];
 
 const EUTILS = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/";
 const MESH_LOOKUP = "https://id.nlm.nih.gov/mesh/lookup/descriptor";
 const PUBMED = "https://pubmed.ncbi.nlm.nih.gov/";
 const EXCLUDE = '(letter[Publication Type] OR editorial[Publication Type] OR comment[Publication Type] OR news[Publication Type] OR "published erratum"[Publication Type] OR "retracted publication"[Publication Type] OR "retraction notice"[Publication Type] OR "expression of concern"[Publication Type] OR preprint[Publication Type])';
+const PERSONAL_MAIL = /@(gmail\.com|googlemail\.com|yahoo\.[a-z.]+|ymail\.com|hotmail\.[a-z.]+|outlook\.[a-z.]+|live\.[a-z.]+|msn\.com|icloud\.com|me\.com|aol\.com|163\.com|126\.com|qq\.com|sina\.com|sina\.cn|foxmail\.com|protonmail\.com|proton\.me|gmx\.[a-z.]+|mail\.ru|yandex\.[a-z.]+|naver\.com|daum\.net|hanmail\.net)$/i;
 const REQUEST_GAP_MS = 400;      // NCBI allows three requests a second without a key
 const REQUEST_TIMEOUT_MS = 60000;
 const LOOKUP_TIMEOUT_MS = 6000;
@@ -283,6 +356,7 @@ const PAPERS_PER_GROUP = 12;
 const $ = (id) => document.getElementById(id);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const fmt = (n) => Number(n).toLocaleString("en-GB");
+const papersWord = (n) => (n === 1 ? "paper" : "papers");
 
 function el(tag, attrs, ...children) {
   const node = document.createElement(tag);
@@ -299,6 +373,7 @@ function cleanTitle(t) {
   return (t || "").replace(/<\/?[a-z][^>]*>/gi, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").trim();
 }
+function newerFirst(a, b) { return a < b ? 1 : a > b ? -1 : 0; }
 
 /* ------------------------------------------------------------------
    Calls to PubMed, spaced out and retried
@@ -352,35 +427,37 @@ function eutils(endpoint, params, opts) {
     }
   });
 }
+async function countFor(query) {
+  const es = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", retmax: "0", term: query }, { post: true });
+  return Number((es && es.esearchresult && es.esearchresult.count) || 0);
+}
 
 /* ------------------------------------------------------------------
-   Topic term picker: only terms returned by the MeSH lookup can be added
+   Entry picker. An entry is a MeSH term from the lookup, or a short
+   run of exact words. Nothing else can be added.
    ------------------------------------------------------------------ */
-const state = { terms: [], running: false, last: null };
-let meshTimer = null, meshAbort = null, meshSeq = 0, suggestions = [], activeIndex = -1;
+const state = { terms: [], running: false, last: null, shown: SETTINGS.listSize, picked: new Set() };
+let meshTimer = null, meshAbort = null, meshSeq = 0, suggestions = [], activeIndex = -1, listNote = "";
 
 function setTermNote(text) { $("termNote").textContent = text || ""; }
 function closeSuggestions() {
-  suggestions = []; activeIndex = -1;
+  suggestions = []; activeIndex = -1; listNote = "";
   $("termList").hidden = true; $("termList").replaceChildren();
   $("termInput").setAttribute("aria-expanded", "false");
   $("termInput").removeAttribute("aria-activedescendant");
 }
-function showSuggestionMessage(text) {
-  suggestions = []; activeIndex = -1;
-  $("termList").replaceChildren(el("li", { class: "message", text }));
-  $("termList").hidden = false;
-}
 function renderSuggestions() {
   const list = $("termList");
   list.replaceChildren();
+  if (listNote) list.append(el("li", { class: "message", text: listNote }));
   suggestions.forEach((s, i) => {
-    const li = el("li", { role: "option", id: "opt" + i, "aria-selected": i === activeIndex ? "true" : "false", text: s.label });
+    const li = el("li", { role: "option", id: "opt" + i, class: s.kind === "words" ? "words" : null,
+      "aria-selected": i === activeIndex ? "true" : "false", text: s.display });
     li.addEventListener("mousedown", (e) => { e.preventDefault(); addTerm(s); });
     list.append(li);
   });
   list.hidden = false;
-  $("termInput").setAttribute("aria-expanded", "true");
+  $("termInput").setAttribute("aria-expanded", suggestions.length ? "true" : "false");
   if (activeIndex >= 0) {
     $("termInput").setAttribute("aria-activedescendant", "opt" + activeIndex);
     const active = $("opt" + activeIndex);
@@ -389,6 +466,15 @@ function renderSuggestions() {
     $("termInput").removeAttribute("aria-activedescendant");
   }
 }
+function cleanWords(q) { return String(q || "").replace(/[^\p{L}\p{N}\s'-]/gu, " ").replace(/\s+/g, " ").trim(); }
+function wordsOption(q) {
+  const text = cleanWords(q);
+  if (text.length < 2 || text.length > SETTINGS.maxWordLength) return null;
+  if (state.terms.filter((t) => t.kind === "words").length >= SETTINGS.maxWordEntries) return null;
+  const id = "w:" + text.toLowerCase();
+  if (state.terms.some((t) => t.id === id)) return null;
+  return { kind: "words", label: text, id, display: "Exact words in title or abstract: “" + text + "”" };
+}
 // First choice: the MeSH lookup service. It answers fast and matches any part of a term.
 async function meshFromLookup(q, signal) {
   const res = await fetch(MESH_LOOKUP + "?label=" + encodeURIComponent(q) + "&match=contains&limit=15", { signal });
@@ -396,11 +482,11 @@ async function meshFromLookup(q, signal) {
   const data = await res.json();
   return (Array.isArray(data) ? data : [])
     .filter((d) => d && d.label && d.resource)
-    .map((d) => ({ label: d.label, id: String(d.resource).split("/").pop() }));
+    .map((d) => ({ kind: "mesh", label: d.label, id: String(d.resource).split("/").pop(), display: d.label }));
 }
 // Backup: the MeSH database behind PubMed's own search service, used when the lookup service does not answer.
 async function meshFromPubmed(q) {
-  const term = q.replace(/[^\p{L}\p{N}\s,'-]/gu, " ").trim();
+  const term = cleanWords(q);
   if (!term) return [];
   const es = await eutils("esearch.fcgi", { db: "mesh", retmode: "json", retmax: "15", term: term + "*" });
   const ids = (es && es.esearchresult && es.esearchresult.idlist) || [];
@@ -409,7 +495,7 @@ async function meshFromPubmed(q) {
   const res = (sm && sm.result) || {};
   return (res.uids || []).map((u) => res[u])
     .filter((x) => x && x.ds_recordtype === "descriptor" && x.ds_meshui && Array.isArray(x.ds_meshterms) && x.ds_meshterms.length)
-    .map((x) => ({ label: x.ds_meshterms[0], id: x.ds_meshui }));
+    .map((x) => ({ kind: "mesh", label: x.ds_meshterms[0], id: x.ds_meshui, display: x.ds_meshterms[0] }));
 }
 async function lookupMesh(q) {
   const seq = ++meshSeq;
@@ -423,35 +509,41 @@ async function lookupMesh(q) {
   clearTimeout(timer);
   if (found === null) { try { found = await meshFromPubmed(q); } catch (e) { found = null; } }
   if (seq !== meshSeq) return;                                                              // newer typing has taken over
-  if (found === null) { showSuggestionMessage("The term list did not load. Check your connection and type again."); return; }
   const ql = q.toLowerCase();
   const score = (s) => { const l = s.label.toLowerCase(); return l === ql ? 0 : l.startsWith(ql) ? 1 : 2; };
-  suggestions = found
+  const mesh = (found || [])
     .filter((s) => !state.terms.some((t) => t.id === s.id))
     .sort((a, b) => score(a) - score(b) || a.label.length - b.label.length || a.label.localeCompare(b.label));
+  const words = wordsOption(q);
+  suggestions = words ? mesh.concat([words]) : mesh;
   activeIndex = suggestions.length ? 0 : -1;
-  if (suggestions.length) renderSuggestions();
-  else showSuggestionMessage("No MeSH term contains these letters. Try another word.");
+  listNote = "";
+  if (found === null) listNote = "The term list did not load. Check your connection and type again.";
+  else if (!mesh.length) listNote = "No MeSH term contains these letters." + (words ? "" : " Try another word.");
+  renderSuggestions();
 }
 function addTerm(s) {
-  if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five terms. Remove one to add another."); closeSuggestions(); return; }
-  if (!state.terms.some((t) => t.id === s.id)) state.terms.push(s);
+  if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five entries. Remove one to add another."); closeSuggestions(); return; }
+  if (!state.terms.some((t) => t.id === s.id)) state.terms.push({ kind: s.kind, label: s.label, id: s.id });
   $("termInput").value = "";
   closeSuggestions();
   setTermNote("");
   renderChips();
   $("termInput").focus();
 }
+function termName(t) { return t.kind === "words" ? "the words “" + t.label + "”" : t.label; }
 function renderChips() {
   const chips = $("chips");
   chips.replaceChildren();
   state.terms.forEach((t) => {
-    const remove = el("button", { type: "button", "aria-label": "Remove " + t.label, text: "×" });
+    const remove = el("button", { type: "button", "aria-label": "Remove " + termName(t), text: "×" });
     remove.addEventListener("click", () => {
       state.terms = state.terms.filter((x) => x.id !== t.id);
       renderChips(); setTermNote(""); $("termInput").focus();
     });
-    chips.append(el("li", null, el("span", { text: t.label }), remove));
+    chips.append(t.kind === "words"
+      ? el("li", { class: "words" }, el("span", { text: "“" + t.label + "”" }), el("span", { class: "kind", text: "exact words" }), remove)
+      : el("li", null, el("span", { text: t.label }), remove));
   });
   $("runButton").disabled = state.running || state.terms.length === 0;
 }
@@ -466,7 +558,7 @@ $("termInput").addEventListener("keydown", (e) => {
   else if (e.key === "ArrowUp" && suggestions.length) { e.preventDefault(); activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length; renderSuggestions(); }
   else if (e.key === "Enter") {
     if (suggestions.length && activeIndex >= 0) { e.preventDefault(); addTerm(suggestions[activeIndex]); }
-    else if ($("termInput").value.trim()) { e.preventDefault(); setTermNote("Pick a term from the list. The page accepts MeSH terms only."); }
+    else if ($("termInput").value.trim()) { e.preventDefault(); setTermNote("Pick an entry from the list."); }
   }
   else if (e.key === "Escape") closeSuggestions();
 });
@@ -477,24 +569,31 @@ $("termInput").addEventListener("blur", () => setTimeout(closeSuggestions, 150))
    ------------------------------------------------------------------ */
 function quote(label) { return '"' + String(label).replace(/"/g, "") + '"'; }
 function pad(n) { return String(n).padStart(2, "0"); }
+function dateYearsAgo(years) {
+  const now = new Date();
+  const from = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
+  return from.getFullYear() + "/" + pad(from.getMonth() + 1) + "/" + pad(from.getDate());
+}
 function readForm() {
   const years = Number($("yearsSelect").value);
   const now = new Date();
-  const from = new Date(now.getFullYear() - years, now.getMonth(), now.getDate());
-  const fromDate = from.getFullYear() + "/" + pad(from.getMonth() + 1) + "/" + pad(from.getDate());
   const design = DESIGNS.find((d) => d.id === $("designSelect").value) || DESIGNS[0];
-  return { terms: state.terms.slice(), years, fromDate, design, exclude: $("excludeBox").checked,
-           today: now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) };
+  return { terms: state.terms.slice(), years, fromDate: dateYearsAgo(years), design, position: $("positionSelect").value,
+           exclude: $("excludeBox").checked, today: now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) };
 }
-function buildQuery(cfg) {
-  const topic = cfg.terms.map((t) => "(" + quote(t.label) + "[MeSH Terms] OR " + quote(t.label) + "[Title/Abstract])").join(" AND ");
-  let q = "(" + topic + ') AND ("' + cfg.fromDate + '"[Date - Publication] : "3000"[Date - Publication])';
+function termClause(t) {
+  if (t.kind === "words") return quote(t.label) + (/\s/.test(t.label) ? "[Title/Abstract:~0]" : "[Title/Abstract]");
+  return "(" + quote(t.label) + "[MeSH Terms] OR " + quote(t.label) + "[Title/Abstract])";
+}
+function buildQuery(cfg, terms, fromDate) {
+  const topic = (terms || cfg.terms).map(termClause).join(" AND ");
+  let q = "(" + topic + ') AND ("' + (fromDate || cfg.fromDate) + '"[Date - Publication] : "3000"[Date - Publication])';
   if (cfg.exclude) q += " NOT " + EXCLUDE;
   return q;
 }
 
 /* ------------------------------------------------------------------
-   Step 1: read the matching papers and count first and last authors
+   Step 1: read the matching papers and count authors in the chosen position
    ------------------------------------------------------------------ */
 function parseName(name) {
   const tokens = String(name || "").trim().split(/\s+/).filter(Boolean);
@@ -507,7 +606,7 @@ function parseName(name) {
   const firstInitial = initials ? initials[0].toLowerCase() : "";
   return { surnameNorm, firstInitial, key: surnameNorm + "|" + firstInitial };
 }
-function tally(papers) {
+function tally(papers, position, designIds) {
   const groups = new Map();
   const add = (paper, name, pos) => {
     const pn = parseName(name);
@@ -517,15 +616,19 @@ function tally(papers) {
     g.own.push({ paper, pos });
   };
   for (const p of papers) {
-    if (p.first) add(p, p.first, "first");
-    if (p.last && p.last !== p.first) add(p, p.last, "last");
+    if (position !== "last" && p.first) add(p, p.first, "first");
+    if (position !== "first" && p.last && (position === "last" || p.last !== p.first)) add(p, p.last, "last");
   }
   const qualifying = [];
   for (const g of groups.values()) {
-    const distinct = new Set(g.own.map((o) => o.paper.pmid)).size;
-    if (distinct >= SETTINGS.minOwnPapers) { g.bound = distinct; qualifying.push(g); }
+    const ids = new Set(g.own.map((o) => o.paper.pmid));
+    if (ids.size < SETTINGS.minOwnPapers) continue;
+    g.bound = ids.size;                                                   // the most papers any one person in this group can have
+    g.dBound = designIds ? [...ids].filter((id) => designIds.has(id)).length : 0;
+    g.own.sort((a, b) => newerFirst(a.paper.sort, b.paper.sort));
+    qualifying.push(g);
   }
-  qualifying.sort((a, b) => b.bound - a.bound || (b.own[0].paper.sort > a.own[0].paper.sort ? 1 : -1));
+  qualifying.sort((a, b) => (designIds ? b.dBound - a.dBound : 0) || b.bound - a.bound || newerFirst(a.own[0].paper.sort, b.own[0].paper.sort));
   return qualifying;
 }
 
@@ -600,11 +703,12 @@ function clusterGroup(g) {
       const edge = o.pos === "first" ? rec.authors[0] : rec.authors[rec.authors.length - 1];
       node = nodeMatches(edge, g) ? edge : null;
     }
-    items.push({ paper: o.paper, node, fetched: !!rec });
+    items.push({ paper: o.paper, pos: o.pos, node, fetched: !!rec });
   }
   const resolved = items.filter((i) => i.node).map((i) => Object.assign(i, { tokens: foreTokens(i.node.fore) }));
-  const full = resolved.filter((i) => i.tokens.length && i.tokens[0].length > 1).sort((a, b) => b.tokens.join("").length - a.tokens.join("").length);
-  const brief = resolved.filter((i) => !(i.tokens.length && i.tokens[0].length > 1));
+  const isFull = (i) => i.tokens.length > 0 && i.tokens[0].length > 1;
+  const full = resolved.filter(isFull).sort((a, b) => b.tokens.join("").length - a.tokens.join("").length);
+  const brief = resolved.filter((i) => !isFull(i));
   const clusters = [];
   const fits = (c, it) => {
     if (it.node.orcid && c.orcid && it.node.orcid !== c.orcid) return false;
@@ -630,17 +734,20 @@ function clusterGroup(g) {
   const unread = items.filter((i) => !i.fetched);
   if (unread.length && clusters.length === 1) for (const it of unread) clusters[0].items.push(it);
   const split = clusters.length > 1;
-  return clusters.map((c) => buildPerson(c, split && unread.length > 0));
+  return clusters.map((c) => buildPerson(c, split && unread.length > 0, clusters.length >= 3));
 }
-function buildPerson(c, atLeast) {
+function buildPerson(c, atLeast, crowded) {
   const seen = new Set();
   const items = c.items.filter((i) => (seen.has(i.paper.pmid) ? false : (seen.add(i.paper.pmid), true)))
-    .sort((a, b) => (a.paper.sort < b.paper.sort ? 1 : a.paper.sort > b.paper.sort ? -1 : 0));
+    .sort((a, b) => newerFirst(a.paper.sort, b.paper.sort));
   const withNode = items.filter((i) => i.node);
   const fullest = withNode.slice().sort((a, b) => (b.node.fore || "").length - (a.node.fore || "").length)[0];
   const latest = withNode[0];
-  let name = "";
-  if (latest) name = [(fullest.node.fore || latest.node.initials || "").trim(), latest.node.last, latest.node.suffix].filter(Boolean).join(" ");
+  let name = "", authorTerm = "";
+  if (latest) {
+    name = [(fullest.node.fore || latest.node.initials || "").trim(), latest.node.last, latest.node.suffix].filter(Boolean).join(" ");
+    authorTerm = (latest.node.last + " " + (latest.node.initials || "")).trim();
+  }
   let affiliation = null, email = null;
   for (const it of withNode) {
     const text = it.node.affs.join(" ");
@@ -651,56 +758,111 @@ function buildPerson(c, atLeast) {
     }
     if (!email) {
       const found = [...new Set((text.match(EMAIL_RE) || []).map((e) => e.replace(/[.]+$/, "")))];
-      if (found.length) email = { addresses: found, pmid: it.paper.pmid, year: it.paper.year };
+      if (found.length) email = { addresses: found, pmid: it.paper.pmid, year: it.paper.year, personal: found.some((e) => PERSONAL_MAIL.test(e)) };
     }
     if (affiliation && email) break;
   }
-  return { name, items, count: items.length, orcid: c.orcid, affiliation, email, initialsOnly: c.initialsOnly, atLeast, designCount: 0 };
+  return { id: 0, name, authorTerm, items, count: items.length,
+           firstCount: items.filter((i) => i.pos === "first").length, lastCount: items.filter((i) => i.pos === "last").length,
+           latestYear: items.length ? items[0].paper.year : "", orcid: c.orcid, affiliation, email,
+           initialsOnly: c.initialsOnly, crowded: crowded && !c.initialsOnly, atLeast, designCount: 0 };
 }
-function orderPeople(people, mode) {
+function orderPeople(people, byDesign) {
   return people.slice().sort((a, b) =>
-    (mode === "design" ? b.designCount - a.designCount : 0) || b.count - a.count ||
-    (a.items[0].paper.sort < b.items[0].paper.sort ? 1 : a.items[0].paper.sort > b.items[0].paper.sort ? -1 : 0) ||
-    a.name.localeCompare(b.name));
+    (byDesign ? b.designCount - a.designCount : 0) || b.count - a.count ||
+    newerFirst(a.items[0].paper.sort, b.items[0].paper.sort) || a.name.localeCompare(b.name));
 }
-async function resolvePeople(groups, onProgress) {
-  let people = [], cursor = 0, round = 0;
-  while (cursor < groups.length) {
-    const batch = groups.slice(cursor, cursor + (round === 0 ? 60 : 40));
-    cursor += batch.length; round++;
-    const want = new Set();
-    for (const g of batch) {
-      g.own.sort((a, b) => (a.paper.sort < b.paper.sort ? 1 : a.paper.sort > b.paper.sort ? -1 : 0));
-      const picked = new Set();
-      for (const o of g.own) { if (picked.size >= PAPERS_PER_GROUP) break; picked.add(o.paper.pmid); }
-      picked.forEach((id) => want.add(id));
+// Reads full records in rounds, and stops once no unread name could still enter the first n places.
+function makeResolver(groups, designIds) {
+  const R = { groups, designIds, cursor: 0, people: [], nextId: 1 };
+  R.secure = (n) => {
+    const next = groups[R.cursor];
+    if (!next) return true;
+    const cut = orderPeople(R.people, !!designIds)[n - 1];
+    if (!cut) return false;
+    if (designIds) return cut.designCount > next.dBound || (cut.designCount === next.dBound && cut.count >= next.bound);
+    return cut.count >= next.bound;
+  };
+  R.ensure = async (n, onProgress) => {
+    let rounds = 0;
+    while (!R.secure(n) && rounds < 4) {
+      const batch = groups.slice(R.cursor, R.cursor + (R.cursor === 0 ? 60 : 40));
+      R.cursor += batch.length; rounds++;
+      const want = new Set();
+      for (const g of batch) {
+        const picked = new Set();
+        for (const o of g.own) { if (picked.size >= PAPERS_PER_GROUP) break; picked.add(o.paper.pmid); }
+        picked.forEach((id) => want.add(id));
+      }
+      await fetchRecords([...want], onProgress);
+      for (const g of batch) for (const p of clusterGroup(g)) {
+        if (p.count < SETTINGS.minOwnPapers || !p.name) continue;
+        p.id = R.nextId++;
+        if (designIds) p.designCount = p.items.filter((i) => designIds.has(i.paper.pmid)).length;
+        R.people.push(p);
+      }
     }
-    await fetchRecords([...want], onProgress);
-    for (const g of batch) people.push(...clusterGroup(g));
-    people = people.filter((p) => p.count >= SETTINGS.minOwnPapers && p.name);
-    const ranked = orderPeople(people, "topic");
-    const cut = ranked[SETTINGS.listSize - 1];
-    const next = groups[cursor];
-    if (!next || round >= 3 || (cut && cut.count >= next.bound)) break;
-  }
-  return { people, unreadGroups: groups.length - cursor };
+  };
+  R.hasMore = (n) => orderPeople(R.people, !!designIds).length > n || R.cursor < groups.length;
+  return R;
 }
 
 /* ------------------------------------------------------------------
    Running a search
    ------------------------------------------------------------------ */
 function setStatus(text) { $("status").textContent = text || ""; }
+function setProgress(fraction) {
+  if (fraction === null) { $("bar").hidden = true; $("barFill").style.width = "0"; return; }
+  $("bar").hidden = false;
+  $("barFill").style.width = Math.max(3, Math.min(100, Math.round(fraction * 100))) + "%";
+}
 function setRunning(on) {
   state.running = on;
   $("runButton").disabled = on || state.terms.length === 0;
   $("runButton").textContent = on ? "Searching" : "Find candidates";
+  $("exampleButton").disabled = on;
+  $("moreButton").disabled = on;
 }
 function clearResults() {
   $("results").hidden = true; $("summary").replaceChildren(); $("people").replaceChildren();
-  $("actions").hidden = true; $("checks").hidden = true; $("orderBox").hidden = true; $("actionNote").textContent = "";
-  state.last = null;
+  $("actions").hidden = true; $("checks").hidden = true; $("moreRow").hidden = true; $("actionNote").textContent = "";
+  state.last = null; state.shown = SETTINGS.listSize; state.picked = new Set();
+  updateTray();
 }
 function stopBox(...paragraphs) { return el("div", { class: "stop" }, ...paragraphs.map((t) => el("p", { text: t }))); }
+
+// When a search is too narrow, work out which single change would give enough papers.
+async function showTooFew(count, cfg) {
+  $("summary").append(stopBox(
+    "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
+    "The page needs at least " + SETTINGS.minPapers + ". With fewer, the list is too narrow to choose from and the entries may point to one study."));
+  $("results").hidden = false;
+  setStatus("Checking which change would help.");
+  const fixes = [];
+  if (cfg.terms.length > 1) for (const t of cfg.terms) {
+    const n = await countFor(buildQuery(cfg, cfg.terms.filter((x) => x.id !== t.id)));
+    if (n >= SETTINGS.minPapers) fixes.push({ n, label: "Search without " + termName(t) + " (" + fmt(n) + " papers)",
+      apply: () => { state.terms = state.terms.filter((x) => x.id !== t.id); renderChips(); } });
+  }
+  if (cfg.years < 10) {
+    const n = await countFor(buildQuery(cfg, null, dateYearsAgo(10)));
+    if (n >= SETTINGS.minPapers) fixes.push({ n, label: "Search the last 10 years (" + fmt(n) + " papers)", apply: () => { $("yearsSelect").value = "10"; } });
+  }
+  const box = el("div", { class: "fixes" });
+  if (fixes.length) {
+    box.append(el("p", { text: fixes.length === 1 ? "One change would give enough papers." : "Any one of these changes would give enough papers." }));
+    const ul = el("ul");
+    fixes.sort((a, b) => a.n - b.n).forEach((f) => {
+      const b = el("button", { type: "button", class: "secondary", text: f.label });
+      b.addEventListener("click", () => { f.apply(); run(); });
+      ul.append(el("li", null, b));
+    });
+    box.append(ul);
+  } else {
+    box.append(el("p", { text: "No single change reaches " + SETTINGS.minPapers + " papers. Try broader terms." }));
+  }
+  $("summary").append(box);
+}
 
 async function run() {
   if (state.running || !state.terms.length) return;
@@ -708,7 +870,7 @@ async function run() {
   try {
     const cfg = readForm();
     const query = buildQuery(cfg);
-    setStatus("Searching PubMed.");
+    setStatus("Searching PubMed."); setProgress(0.04);
     const es = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", usehistory: "y", retmax: "0", sort: "pub_date", term: query }, { post: true });
     const r = (es && es.esearchresult) || {};
     if (r.ERROR) throw new Error("search");
@@ -716,16 +878,14 @@ async function run() {
     const pubmedUrl = PUBMED + "?term=" + encodeURIComponent(query) + "&sort=date";
 
     if (count < SETTINGS.minPapers) {
-      $("summary").append(stopBox(
-        "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
-        "The page needs at least " + SETTINGS.minPapers + ". With fewer, the list is too narrow to choose from and the terms may point to one study. Remove a term or widen the period."));
-      $("results").hidden = false; setStatus(""); $("resultsHead").focus();
+      await showTooFew(count, cfg);
+      setStatus(""); setProgress(null); $("resultsHead").focus();
       return;
     }
 
     let designIds = null, designCount = 0;
     if (cfg.design.id) {
-      setStatus("Checking study designs.");
+      setStatus("Checking study designs."); setProgress(0.08);
       const ds = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", retmax: "10000", sort: "pub_date", term: "(" + query + ") AND " + cfg.design.query }, { post: true });
       const dr = (ds && ds.esearchresult) || {};
       designIds = new Set(dr.idlist || []); designCount = Number(dr.count || 0);
@@ -734,7 +894,8 @@ async function run() {
     const toRead = Math.min(count, SETTINGS.maxPapersRead);
     const papers = [];
     for (let start = 0; start < toRead; start += SUMMARY_BATCH) {
-      setStatus("Reading papers: " + fmt(Math.min(start + SUMMARY_BATCH, toRead)) + " of " + fmt(toRead) + ".");
+      const done = Math.min(start + SUMMARY_BATCH, toRead);
+      setStatus("Reading papers: " + fmt(done) + " of " + fmt(toRead) + "."); setProgress(0.1 + 0.5 * (start / toRead));
       const sm = await eutils("esummary.fcgi", { db: "pubmed", retmode: "json", version: "2.0", query_key: r.querykey, WebEnv: r.webenv,
         retstart: String(start), retmax: String(Math.min(SUMMARY_BATCH, toRead - start)) });
       const res = (sm && sm.result) || {};
@@ -749,13 +910,15 @@ async function run() {
       }
     }
 
-    const groups = tally(papers);
-    setStatus("Checking names against the full records.");
-    const resolved = await resolvePeople(groups, (done, total) => setStatus("Checking names against the full records: " + fmt(done) + " of " + fmt(total) + "."));
-    if (designIds) for (const p of resolved.people) p.designCount = p.items.filter((i) => designIds.has(i.paper.pmid)).length;
+    const groups = tally(papers, cfg.position, designIds);
+    setStatus("Checking names against the full records."); setProgress(0.62);
+    const resolver = makeResolver(groups, designIds);
+    await resolver.ensure(SETTINGS.listSize, (done, total) => {
+      setStatus("Checking names against the full records: " + fmt(done) + " of " + fmt(total) + "."); setProgress(0.62 + 0.35 * (done / total));
+    });
 
-    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, designCount, people: resolved.people,
-                   qualifying: resolved.people.length + resolved.unreadGroups, exact: resolved.unreadGroups === 0 };
+    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, designCount, resolver };
+    setProgress(1);
     render();
     setStatus("");
     $("resultsHead").focus();
@@ -768,14 +931,34 @@ async function run() {
     $("results").hidden = false; setStatus("");
   } finally {
     setRunning(false);
+    setTimeout(() => setProgress(null), 400);
+  }
+}
+async function showMore() {
+  const L = state.last;
+  if (!L || state.running) return;
+  setRunning(true);
+  try {
+    state.shown += SETTINGS.listSize;
+    $("actionNote").textContent = "Checking more names.";
+    await L.resolver.ensure(state.shown);
+    $("actionNote").textContent = "";
+    render();
+  } catch (e) {
+    state.shown -= SETTINGS.listSize;
+    $("actionNote").textContent = "PubMed did not answer. Wait a minute and press the button again.";
+  } finally {
+    setRunning(false);
   }
 }
 
 /* ------------------------------------------------------------------
    Showing the list
    ------------------------------------------------------------------ */
-function currentOrder() { const c = document.querySelector('input[name="order"]:checked'); return c ? c.value : "topic"; }
-function shownPeople() { const L = state.last; return orderPeople(L.people, L.cfg.design.id ? currentOrder() : "topic").slice(0, SETTINGS.listSize); }
+function allPeople() { const L = state.last; return orderPeople(L.resolver.people, !!L.cfg.design.id); }
+function shownPeople() { return allPeople().slice(0, state.shown); }
+function pickedPeople() { return allPeople().filter((p) => state.picked.has(p.id)); }
+function positionWords(cfg) { return cfg.position === "first" ? "first author" : cfg.position === "last" ? "last author" : "first or last author"; }
 
 function render() {
   const L = state.last;
@@ -785,39 +968,58 @@ function render() {
   let first = "PubMed has " + fmt(L.count) + " papers that match.";
   if (L.count > L.toRead) first += " The page read the most recent " + fmt(L.toRead) + ".";
   summary.append(el("p", { text: first }));
-  if (L.count > 20000) summary.append(el("p", { class: "flag", text: "These terms are very broad, so the list reflects only the newest papers. Add a term to narrow the field." }));
-  if (L.cfg.design.id) summary.append(el("p", { text: fmt(L.designCount) + " of the matching papers fit the design you chose: " + L.cfg.design.label.toLowerCase() + "." }));
+  if (L.count > 20000) summary.append(el("p", { class: "flag", text: "These entries are very broad, so the list reflects only the newest papers. Add an entry to narrow the field." }));
+  if (L.cfg.design.id) summary.append(el("p", { text: fmt(L.designCount) + " of them fit the design you chose: " + L.cfg.design.label.toLowerCase() + ". People with papers of that design come first." }));
 
+  const total = L.resolver.people.length + (L.resolver.groups.length - L.resolver.cursor);
+  const exact = L.resolver.cursor >= L.resolver.groups.length;
   if (!shown.length) {
-    summary.append(stopBox("Nobody is first or last author on two or more of these papers.", "Remove a term or widen the period."));
-  } else if (shown.length < SETTINGS.listSize) {
-    summary.append(el("p", { text: "Only " + shown.length + (shown.length === 1 ? " person is" : " people are") + " first or last author on at least two of them, so the list is shorter than " + SETTINGS.listSize + ". Remove a term or widen the period to see more." }));
+    summary.append(stopBox("Nobody is " + positionWords(L.cfg) + " on two or more of these papers.", "Remove an entry, widen the period or change the author position."));
+  } else if (exact && total <= SETTINGS.listSize) {
+    summary.append(el("p", { text: "Only " + total + (total === 1 ? " person is " : " people are ") + positionWords(L.cfg) + " on at least two of them, so the list is shorter than " + SETTINGS.listSize + ". Remove an entry or widen the period to see more." }));
   } else {
-    summary.append(el("p", { text: (L.exact ? "" : "About ") + fmt(L.qualifying) + " people are first or last author on at least two of them. The list shows the top " + SETTINGS.listSize + "." }));
+    summary.append(el("p", { text: (exact ? "" : "About ") + fmt(total) + " people are " + positionWords(L.cfg) + " on at least two of them. The list shows the top " + shown.length + "." }));
   }
 
   $("pubmedLink").href = L.pubmedUrl;
   $("actions").hidden = false;
   $("csvButton").hidden = !shown.length;
   $("checks").hidden = !shown.length;
-  $("orderBox").hidden = !(L.cfg.design.id && shown.length);
+  $("moreRow").hidden = !(shown.length && L.resolver.hasMore(state.shown));
 
   const list = $("people");
   list.replaceChildren();
   shown.forEach((p, i) => list.append(personEntry(p, i + 1, L)));
   $("results").hidden = false;
+  updateTray();
 }
 function paperItem(it) {
   const p = it.paper;
   return el("li", null, link(PUBMED + p.pmid + "/", p.title || "Untitled record"), " ",
     el("span", { class: "where", text: [p.source, p.year].filter(Boolean).join(", ") + ". PMID " + p.pmid }));
 }
+function countLine(p, L) {
+  const parts = [];
+  if (p.firstCount) parts.push("first author on " + p.firstCount);
+  if (p.lastCount) parts.push("last author on " + p.lastCount);
+  let s = parts.join(" and ");
+  s = s.charAt(0).toUpperCase() + s.slice(1) + " matching " + papersWord(p.count) + (p.atLeast ? ", and possibly more." : ".");
+  if (p.latestYear) s += " The latest is from " + p.latestYear + ".";
+  if (L.cfg.design.id) s += " " + p.designCount + (p.designCount === 1 ? " fits" : " fit") + " the design you chose.";
+  return s;
+}
 function personEntry(p, rank, L) {
+  const li = el("li", { class: "person" + (state.picked.has(p.id) ? " picked" : "") });
+  const pick = el("input", { type: "checkbox" });
+  pick.checked = state.picked.has(p.id);
+  pick.addEventListener("change", () => {
+    if (pick.checked) state.picked.add(p.id); else state.picked.delete(p.id);
+    li.classList.toggle("picked", pick.checked);
+    updateTray();
+  });
   const body = el("div");
-  body.append(el("h3", { text: p.name }));
-  let count = "First or last author on " + (p.atLeast ? "at least " : "") + p.count + " matching papers.";
-  if (L.cfg.design.id) count += " " + p.designCount + (p.designCount === 1 ? " of them fits" : " of them fit") + " the design you chose.";
-  body.append(el("p", { class: "count", text: count }));
+  body.append(el("div", { class: "head" }, el("h3", { text: p.name }), el("label", { class: "pick" }, pick, "Shortlist")));
+  body.append(el("p", { class: "count", text: countLine(p, L) }));
 
   const facts = el("dl", { class: "facts" });
   facts.append(el("dt", { text: "Affiliation" }));
@@ -830,11 +1032,13 @@ function personEntry(p, rank, L) {
   facts.append(p.email
     ? el("dd", null, p.email.addresses.join(", ") + ". Printed on ", link(PUBMED + p.email.pmid + "/", "PubMed record " + p.email.pmid),
         p.email.year ? ", " + p.email.year + "." : ".", " Open the record and compare before you use it." +
-        (p.email.addresses.length > 1 ? " More than one address is printed, so check which one belongs to this person." : ""))
+        (p.email.addresses.length > 1 ? " More than one address is printed, so check which one belongs to this person." : "") +
+        (p.email.personal ? " This is a personal mail address, so take extra care to confirm it." : ""))
     : el("dd", { text: "None printed on these PubMed records." }));
   body.append(facts);
 
   if (p.initialsOnly) body.append(el("p", { class: "flag", text: "Check this name. PubMed gives initials only for these papers, so this entry may combine more than one person." }));
+  else if (p.crowded) body.append(el("p", { class: "flag", text: "Several people in PubMed share this surname and first initial. Check the affiliation on each paper." }));
 
   const head = p.items.slice(0, 3), rest = p.items.slice(3);
   const papers = el("ul", { class: "papers" });
@@ -845,24 +1049,47 @@ function personEntry(p, rank, L) {
     rest.forEach((it) => more.append(paperItem(it)));
     body.append(el("details", null, el("summary", { text: "Show " + rest.length + " more" }), more));
   }
-  return el("li", { class: "person" }, el("div", { class: "rank", "aria-hidden": "true", text: String(rank) }), body);
+  if (p.authorTerm) body.append(el("p", { class: "allpapers" },
+    link(PUBMED + "?term=" + encodeURIComponent('"' + p.authorTerm + '"[Author]') + "&sort=date", "All papers under this name in PubMed")));
+  li.append(el("div", { class: "rank", "aria-hidden": "true", text: String(rank) }), body);
+  return li;
 }
 
 /* ------------------------------------------------------------------
-   Search record and CSV
+   Shortlist, search record and CSV
    ------------------------------------------------------------------ */
+function updateTray() {
+  const n = state.last ? pickedPeople().length : 0;
+  $("tray").hidden = n === 0;
+  document.body.classList.toggle("has-tray", n > 0);
+  $("trayText").textContent = n === 1 ? "1 person on your shortlist" : n + " people on your shortlist";
+}
+function shortlistText() {
+  return pickedPeople().map((p) => [
+    p.name,
+    p.affiliation ? p.affiliation.text + " (PubMed record " + p.affiliation.pmid + (p.affiliation.year ? ", " + p.affiliation.year : "") + ")" : "Affiliation: none printed",
+    p.email ? "Email: " + p.email.addresses.join(", ") + " (printed on PubMed record " + p.email.pmid + (p.email.year ? ", " + p.email.year : "") + ")" : "Email: none printed",
+    p.orcid ? "ORCID: https://orcid.org/" + p.orcid : "ORCID: none on record",
+    "Papers: " + p.items.slice(0, 5).map((it) => "PMID " + it.paper.pmid).join(", ")
+  ].join("\n")).join("\n\n");
+}
 function searchRecord() {
-  const L = state.last, shown = shownPeople();
+  const L = state.last;
+  const mesh = L.cfg.terms.filter((t) => t.kind === "mesh").map((t) => t.label);
+  const words = L.cfg.terms.filter((t) => t.kind === "words").map((t) => t.label);
   return [
     "Reviewer candidate search record",
     "Date: " + L.cfg.today,
     "Tool: Reviewer candidate finder (PubMed search, no manuscript content entered)",
-    "Topic terms: " + L.cfg.terms.map((t) => t.label).join("; "),
+    "Topic terms: " + (mesh.length ? mesh.join("; ") : "none"),
+    "Exact words: " + (words.length ? words.join("; ") : "none"),
     "Study design: " + L.cfg.design.label,
+    "Author position: " + positionWords(L.cfg),
     "Period: last " + L.cfg.years + " years (from " + L.cfg.fromDate + ")",
     "Left out letters, editorials, comments, corrections, retracted papers and preprints: " + (L.cfg.exclude ? "yes" : "no"),
     "Papers matched: " + L.count + " (read: " + L.read + ")",
-    "People listed: " + shown.length,
+    "People listed: " + shownPeople().length,
+    "People shortlisted: " + pickedPeople().length,
     "PubMed query: " + L.query
   ].join("\n");
 }
@@ -878,13 +1105,22 @@ async function copyText(text) {
   }
 }
 function csvCell(v) { const s = String(v === null || v === undefined ? "" : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
-function buildCsv() {
+function buildCsv(people) {
   const L = state.last;
-  const rows = [["rank", "name", "first_or_last_author_papers", "design_papers", "affiliation", "affiliation_pmid", "orcid", "email_printed", "email_pmid", "name_check", "pmids"]];
-  shownPeople().forEach((p, i) => rows.push([i + 1, p.name, (p.atLeast ? ">=" : "") + p.count, L.cfg.design.id ? p.designCount : "",
-    p.affiliation ? p.affiliation.text : "", p.affiliation ? p.affiliation.pmid : "", p.orcid || "",
-    p.email ? p.email.addresses.join("; ") : "", p.email ? p.email.pmid : "", p.initialsOnly ? "initials only" : "", p.items.map((it) => it.paper.pmid).join(" ")]));
+  const rows = [["rank", "name", "papers", "first_author_papers", "last_author_papers", "design_papers", "latest_year", "affiliation", "affiliation_pmid",
+                 "orcid", "email_printed", "email_pmid", "personal_mail", "name_check", "pmids"]];
+  const order = allPeople();
+  people.forEach((p) => rows.push([order.indexOf(p) + 1, p.name, (p.atLeast ? ">=" : "") + p.count, p.firstCount, p.lastCount, L.cfg.design.id ? p.designCount : "",
+    p.latestYear, p.affiliation ? p.affiliation.text : "", p.affiliation ? p.affiliation.pmid : "", p.orcid || "",
+    p.email ? p.email.addresses.join("; ") : "", p.email ? p.email.pmid : "", p.email && p.email.personal ? "yes" : "",
+    p.initialsOnly ? "initials only" : p.crowded ? "shared surname and initial" : "", p.items.map((it) => it.paper.pmid).join(" ")]));
   return "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+}
+function download(text, filename) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const a = el("a", { href: url, download: filename });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 /* ------------------------------------------------------------------
@@ -894,7 +1130,14 @@ $("journalLine").textContent = SETTINGS.journalLine;
 $("journalLine").hidden = !SETTINGS.journalLine;
 DESIGNS.forEach((d) => $("designSelect").append(el("option", { value: d.id, text: d.label })));
 $("searchForm").addEventListener("submit", (e) => { e.preventDefault(); run(); });
-document.querySelectorAll('input[name="order"]').forEach((r) => r.addEventListener("change", () => { if (state.last) render(); }));
+$("exampleButton").addEventListener("click", () => {
+  if (state.running) return;
+  state.terms = EXAMPLE.map((t) => Object.assign({}, t));
+  $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
+  $("termInput").value = ""; closeSuggestions(); setTermNote(""); renderChips();
+  run();
+});
+$("moreButton").addEventListener("click", showMore);
 $("copyButton").addEventListener("click", async () => {
   if (!state.last) return;
   const ok = await copyText(searchRecord());
@@ -902,12 +1145,20 @@ $("copyButton").addEventListener("click", async () => {
 });
 $("csvButton").addEventListener("click", () => {
   if (!state.last) return;
-  const url = URL.createObjectURL(new Blob([buildCsv()], { type: "text/csv;charset=utf-8" }));
-  const a = el("a", { href: url, download: "reviewer-candidates-" + state.last.cfg.today + ".csv" });
-  document.body.append(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  download(buildCsv(shownPeople()), "reviewer-candidates-" + state.last.cfg.today + ".csv");
   $("actionNote").textContent = "List downloaded.";
 });
+$("trayCopy").addEventListener("click", async () => {
+  if (!state.last) return;
+  const ok = await copyText(shortlistText());
+  $("trayText").textContent = ok ? "Shortlist copied" : "The browser blocked the copy";
+  setTimeout(updateTray, 2500);
+});
+$("trayCsv").addEventListener("click", () => {
+  if (!state.last) return;
+  download(buildCsv(pickedPeople()), "reviewer-shortlist-" + state.last.cfg.today + ".csv");
+});
+$("trayClear").addEventListener("click", () => { state.picked = new Set(); if (state.last) render(); else updateTray(); });
 renderChips();
 // On a computer, put the cursor in the term box so the editor can start typing at once.
 if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches) $("termInput").focus({ preventScroll: true });
