@@ -271,6 +271,8 @@ const MESH_LOOKUP = "https://id.nlm.nih.gov/mesh/lookup/descriptor";
 const PUBMED = "https://pubmed.ncbi.nlm.nih.gov/";
 const EXCLUDE = '(letter[Publication Type] OR editorial[Publication Type] OR comment[Publication Type] OR news[Publication Type] OR "published erratum"[Publication Type] OR "retracted publication"[Publication Type] OR "retraction notice"[Publication Type] OR "expression of concern"[Publication Type] OR preprint[Publication Type])';
 const REQUEST_GAP_MS = 400;      // NCBI allows three requests a second without a key
+const REQUEST_TIMEOUT_MS = 60000;
+const LOOKUP_TIMEOUT_MS = 6000;
 const SUMMARY_BATCH = 500;
 const RECORD_BATCH = 150;
 const PAPERS_PER_GROUP = 12;
@@ -324,18 +326,22 @@ function eutils(endpoint, params, opts) {
   if (SETTINGS.contactEmail) body.set("email", SETTINGS.contactEmail);
   return queue(async () => {
     for (let attempt = 1; ; attempt++) {
-      let res = null;
+      let res = null, text = "";
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);   // a request that hangs counts as a failure
       try {
         res = opts.post
-          ? await fetch(EUTILS + endpoint, { method: "POST", body })
-          : await fetch(EUTILS + endpoint + "?" + body.toString());
+          ? await fetch(EUTILS + endpoint, { method: "POST", body, signal: ctrl.signal })
+          : await fetch(EUTILS + endpoint + "?" + body.toString(), { signal: ctrl.signal });
+        if (res.ok) text = await res.text();
       } catch (e) {
+        clearTimeout(timer);
         if (attempt >= 3) throw new Error("network");
         await sleep(1500 * attempt);
         continue;
       }
+      clearTimeout(timer);
       if (res.ok) {
-        const text = await res.text();
         if (opts.xml) return text;
         const data = parseJson(text);
         if (data && typeof data.error === "string" && /rate limit/i.test(data.error) && attempt < 3) { await sleep(2000 * attempt); continue; }
@@ -351,7 +357,7 @@ function eutils(endpoint, params, opts) {
    Topic term picker: only terms returned by the MeSH lookup can be added
    ------------------------------------------------------------------ */
 const state = { terms: [], running: false, last: null };
-let meshTimer = null, meshAbort = null, suggestions = [], activeIndex = -1;
+let meshTimer = null, meshAbort = null, meshSeq = 0, suggestions = [], activeIndex = -1;
 
 function setTermNote(text) { $("termNote").textContent = text || ""; }
 function closeSuggestions() {
@@ -383,26 +389,49 @@ function renderSuggestions() {
     $("termInput").removeAttribute("aria-activedescendant");
   }
 }
+// First choice: the MeSH lookup service. It answers fast and matches any part of a term.
+async function meshFromLookup(q, signal) {
+  const res = await fetch(MESH_LOOKUP + "?label=" + encodeURIComponent(q) + "&match=contains&limit=15", { signal });
+  if (!res.ok) throw new Error("mesh " + res.status);
+  const data = await res.json();
+  return (Array.isArray(data) ? data : [])
+    .filter((d) => d && d.label && d.resource)
+    .map((d) => ({ label: d.label, id: String(d.resource).split("/").pop() }));
+}
+// Backup: the MeSH database behind PubMed's own search service, used when the lookup service does not answer.
+async function meshFromPubmed(q) {
+  const term = q.replace(/[^\p{L}\p{N}\s,'-]/gu, " ").trim();
+  if (!term) return [];
+  const es = await eutils("esearch.fcgi", { db: "mesh", retmode: "json", retmax: "15", term: term + "*" });
+  const ids = (es && es.esearchresult && es.esearchresult.idlist) || [];
+  if (!ids.length) return [];
+  const sm = await eutils("esummary.fcgi", { db: "mesh", retmode: "json", id: ids.join(",") });
+  const res = (sm && sm.result) || {};
+  return (res.uids || []).map((u) => res[u])
+    .filter((x) => x && x.ds_recordtype === "descriptor" && x.ds_meshui && Array.isArray(x.ds_meshterms) && x.ds_meshterms.length)
+    .map((x) => ({ label: x.ds_meshterms[0], id: x.ds_meshui }));
+}
 async function lookupMesh(q) {
+  const seq = ++meshSeq;
   if (meshAbort) meshAbort.abort();
-  meshAbort = new AbortController();
-  try {
-    const res = await fetch(MESH_LOOKUP + "?label=" + encodeURIComponent(q) + "&match=contains&limit=15", { signal: meshAbort.signal });
-    if (!res.ok) throw new Error("mesh " + res.status);
-    const data = await res.json();
-    const ql = q.toLowerCase();
-    const score = (s) => { const l = s.label.toLowerCase(); return l === ql ? 0 : l.startsWith(ql) ? 1 : 2; };
-    suggestions = (Array.isArray(data) ? data : [])
-      .filter((d) => d && d.label && d.resource)
-      .map((d) => ({ label: d.label, id: String(d.resource).split("/").pop() }))
-      .filter((s) => !state.terms.some((t) => t.id === s.id))
-      .sort((a, b) => score(a) - score(b) || a.label.length - b.label.length || a.label.localeCompare(b.label));
-    activeIndex = suggestions.length ? 0 : -1;
-    if (suggestions.length) renderSuggestions();
-    else showSuggestionMessage("No MeSH term contains these letters. Try another word.");
-  } catch (e) {
-    if (e.name !== "AbortError") showSuggestionMessage("The term list did not load. Check your connection and type again.");
-  }
+  const ctrl = new AbortController();
+  meshAbort = ctrl;
+  let found = null, timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, LOOKUP_TIMEOUT_MS);
+  try { found = await meshFromLookup(q, ctrl.signal); }
+  catch (e) { if (e.name === "AbortError" && !timedOut) { clearTimeout(timer); return; } }   // replaced by newer typing
+  clearTimeout(timer);
+  if (found === null) { try { found = await meshFromPubmed(q); } catch (e) { found = null; } }
+  if (seq !== meshSeq) return;                                                              // newer typing has taken over
+  if (found === null) { showSuggestionMessage("The term list did not load. Check your connection and type again."); return; }
+  const ql = q.toLowerCase();
+  const score = (s) => { const l = s.label.toLowerCase(); return l === ql ? 0 : l.startsWith(ql) ? 1 : 2; };
+  suggestions = found
+    .filter((s) => !state.terms.some((t) => t.id === s.id))
+    .sort((a, b) => score(a) - score(b) || a.label.length - b.label.length || a.label.localeCompare(b.label));
+  activeIndex = suggestions.length ? 0 : -1;
+  if (suggestions.length) renderSuggestions();
+  else showSuggestionMessage("No MeSH term contains these letters. Try another word.");
 }
 function addTerm(s) {
   if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five terms. Remove one to add another."); closeSuggestions(); return; }
