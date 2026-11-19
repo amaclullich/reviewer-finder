@@ -125,6 +125,8 @@
   .flag { background: var(--note-bg); color: var(--note-ink); padding: 0.55rem 0.8rem; margin-top: 0.9rem; max-width: 40rem; }
   .flag.conflict { background: var(--stop-bg); color: var(--stop-ink); }
   .flag.conflict a { color: inherit; }
+  .tagline { margin-top: 0.5rem; }
+  .tag { display: inline-block; font-size: 0.85rem; background: var(--note-bg); color: var(--note-ink); padding: 0.1rem 0.55rem; border-radius: 3px; }
   .pair { color: var(--muted); font-size: 0.95rem; margin-top: 0.6rem; max-width: 40rem; }
   .person .divider { grid-column: 1 / -1; margin: 0 0 1.4rem; padding-top: 0.7rem; border-top: 3px solid var(--navy); font-family: var(--serif); font-size: 1.15rem; color: var(--navy); max-width: none; }
   .conflict { margin-top: 2rem; max-width: 42rem; }
@@ -319,7 +321,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 3.0, November 2026.</p>
+  <p>Version 3.1, November 2026.</p>
 </div></div>
 </footer>
 
@@ -375,7 +377,7 @@ const MESH_LOOKUP = "https://id.nlm.nih.gov/mesh/lookup/descriptor";
 const PUBMED = "https://pubmed.ncbi.nlm.nih.gov/";
 const EXCLUDE = '(letter[Publication Type] OR editorial[Publication Type] OR comment[Publication Type] OR news[Publication Type] OR "published erratum"[Publication Type] OR "retracted publication"[Publication Type] OR "retraction notice"[Publication Type] OR "expression of concern"[Publication Type] OR preprint[Publication Type])';
 const PERSONAL_MAIL = /@(gmail\.com|googlemail\.com|yahoo\.[a-z.]+|ymail\.com|hotmail\.[a-z.]+|outlook\.[a-z.]+|live\.[a-z.]+|msn\.com|icloud\.com|me\.com|aol\.com|163\.com|126\.com|qq\.com|sina\.com|sina\.cn|foxmail\.com|protonmail\.com|proton\.me|gmx\.[a-z.]+|mail\.ru|yandex\.[a-z.]+|naver\.com|daum\.net|hanmail\.net)$/i;
-const REQUEST_GAP_MS = 400;      // NCBI allows three requests a second without a key
+const REQUEST_GAP_MS = 550;      // NCBI allows three requests a second without a key; this keeps the page at two
 const REQUEST_TIMEOUT_MS = 60000;
 const LOOKUP_TIMEOUT_MS = 6000;
 const SUMMARY_BATCH = 500;
@@ -427,6 +429,7 @@ function parseJson(text) {
   catch (e) { return JSON.parse(text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, " ")); }
 }
 let liveCtrl = null;          // the request in progress, so that Stop can end it
+function retryNote() { if (state.running) setStatus("PubMed is slow to answer. Trying again."); }
 function eutils(endpoint, params, opts) {
   opts = opts || {};
   const body = new URLSearchParams(params);
@@ -448,20 +451,21 @@ function eutils(endpoint, params, opts) {
         clearTimeout(timer);
         if (state.stopped) throw new Error("stopped");
         if (attempt >= 3) throw new Error("network");
+        retryNote();
         await sleep(1500 * attempt);
         continue;
       }
       clearTimeout(timer);
       if (res.ok) {
         if (opts.xml) {
-          if (/^\s*\{\s*"error"/.test(text) || /<ERROR>/.test(text.slice(0, 2000))) { if (attempt < 3) { await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
+          if (/^\s*\{\s*"error"/.test(text) || /<ERROR>/.test(text.slice(0, 2000))) { if (attempt < 3) { retryNote(); await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
           return text;
         }
         const data = parseJson(text);
-        if (data && typeof data.error === "string") { if (attempt < 3) { await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
+        if (data && typeof data.error === "string") { if (attempt < 3) { retryNote(); await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
         return data;
       }
-      if ((res.status === 429 || res.status >= 500) && attempt < 3) { await sleep(2000 * attempt); continue; }
+      if ((res.status === 429 || res.status >= 500) && attempt < 3) { retryNote(); await sleep(2000 * attempt); continue; }
       throw new Error("http " + res.status);
     }
   });
@@ -1263,6 +1267,7 @@ function personEntry(p, rank, L, note) {
   });
   const body = el("div");
   body.append(el("div", { class: "head" }, el("h3", { text: p.name }), el("label", { class: "pick" }, pick, "Shortlist")));
+  if (L.minOwn === 1 && p.count === 1) body.append(el("p", { class: "tagline" }, el("span", { class: "tag", text: "One matching paper" })));
   body.append(el("p", { class: "count", text: countLine(p, L) }));
 
   const facts = el("dl", { class: "facts" });
