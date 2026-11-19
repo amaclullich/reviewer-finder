@@ -67,6 +67,9 @@
   fieldset { border: 0; padding: 0; margin: 0 0 2rem; min-width: 0; }
   legend, .field-label { font-family: var(--serif); font-size: 1.35rem; color: var(--navy); padding: 0; display: block; }
   .hint { color: var(--muted); font-size: 0.975rem; margin-top: 0.35rem; }
+  .hint.warn { background: var(--note-bg); color: var(--note-ink); padding: 0.6rem 0.8rem; margin-top: 0.75rem; max-width: 34rem; font-size: 1rem; }
+  .rule { font-weight: 600; color: var(--navy); margin-top: 0.6rem; font-size: 1.1rem; }
+  #termHow { margin-top: 0.3rem; }
   input[type="text"], select {
     font: inherit; color: var(--ink); background: #fff; border: 1.5px solid var(--navy); border-radius: 4px;
     padding: 0.65rem 0.75rem; width: 100%; margin-top: 0.7rem;
@@ -78,12 +81,13 @@
   .suggestions li { padding: 0.55rem 0.75rem; cursor: pointer; }
   .suggestions li[aria-selected="true"], .suggestions li[role="option"]:hover { background: var(--tint); }
   .suggestions li.message { cursor: default; color: var(--muted); }
+  .suggestions li.listhead { cursor: default; color: var(--navy); font-weight: 600; font-size: 0.95rem; background: var(--tint); position: sticky; top: 0; }
   .suggestions li.words { border-top: 1px solid var(--rule); color: var(--purple); position: sticky; bottom: 0; background: #fff; }
   .suggestions li.words[aria-selected="true"], .suggestions li.words:hover { background: var(--tint); }
   .chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0.9rem 0 0; }
   .chips li { display: flex; align-items: center; background: var(--purple); color: #fff; border: 1.5px solid var(--purple); border-radius: 4px; padding: 0.3rem 0.3rem 0.3rem 0.8rem; }
   .chips li.words { background: #fff; color: var(--purple); }
-  .chips .kind { font-size: 0.85rem; margin-left: 0.45rem; color: var(--muted); }
+  .chips .kind { font-size: 0.82rem; margin-left: 0.5rem; opacity: 0.85; }
   .chips button { font: inherit; background: transparent; color: inherit; border: 0; cursor: pointer; padding: 0 0.5rem; font-size: 1.25rem; line-height: 1; }
   .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem 1.5rem; }
   .row > div { display: flex; flex-direction: column; }
@@ -184,27 +188,29 @@
 <main class="wrap">
 
   <ol class="steps" aria-label="How to use this page">
-    <li><span class="num" aria-hidden="true">1</span><strong>Pick topic terms</strong><span class="what">Two or three terms for the manuscript's field.</span></li>
-    <li><span class="num" aria-hidden="true">2</span><strong>Find candidates</strong><span class="what">The page lists up to 20 people who have recently published on those terms.</span></li>
+    <li><span class="num" aria-hidden="true">1</span><strong>Pick MeSH headings</strong><span class="what">Type a word, then choose from the list. Two or three headings are usually enough.</span></li>
+    <li><span class="num" aria-hidden="true">2</span><strong>Find candidates</strong><span class="what">The page lists up to 20 people who have recently published on those headings.</span></li>
     <li><span class="num" aria-hidden="true">3</span><strong>Check and invite</strong><span class="what">Check each person, then invite through the journal's system as usual.</span></li>
   </ol>
   <noscript><p class="stop">This page needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
 
   <section class="keepout" aria-labelledby="keepoutHead">
     <h2 id="keepoutHead">Keep the manuscript out of this page</h2>
-    <p>Enter topic terms and, if you need them, a few exact words such as the name of a tool or a drug. Leave out the title, the abstract, the findings and the authors' names.</p>
+    <p>Enter MeSH headings and, if you need them, a few exact words such as the name of a tool or a drug. Leave out the title, the abstract, the findings and the authors' names.</p>
     <p>The page sends your entries to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
   </section>
 
   <form id="searchForm" novalidate>
     <fieldset>
-      <legend>Topic terms</legend>
-      <p class="hint" id="termHint">Type a word and pick a term from the list. For a manuscript on delirium after hip fracture surgery, you would pick Delirium and Hip Fractures. For a named tool, drug or method that the list lacks, pick the last option to search for the exact words. A paper counts when it matches every entry.</p>
+      <legend>MeSH headings for the topic</legend>
+      <p class="rule" id="termRule">Choose from the list. Typing alone adds nothing.</p>
+      <p id="termHow">MeSH is the fixed set of subject headings that PubMed uses to index papers. Type a word in the box, and the matching headings appear below it. Click one to add it.</p>
+      <p class="hint" id="termHint">For a manuscript on delirium after hip fracture surgery, you would choose Delirium and Hip Fractures. If no heading fits a named tool, drug or method, choose the last option in the list to search for the exact words. A paper counts when it matches every entry.</p>
       <div class="combo">
         <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
-               placeholder="For example: delirium" role="combobox" aria-expanded="false"
-               aria-controls="termList" aria-autocomplete="list" aria-describedby="termHint" aria-label="Find a topic term">
-        <ul class="suggestions" id="termList" role="listbox" aria-label="Matching terms" hidden></ul>
+               placeholder="Type a word, then choose from the list" role="combobox" aria-expanded="false"
+               aria-controls="termList" aria-autocomplete="list" aria-describedby="termRule termHow termHint" aria-label="Search the MeSH headings">
+        <ul class="suggestions" id="termList" role="listbox" aria-label="Matching MeSH headings" hidden></ul>
       </div>
       <ul class="chips" id="chips" aria-label="Entries you have picked"></ul>
       <p class="hint" id="termNote" role="status"></p>
@@ -242,7 +248,7 @@
     </p>
 
     <p class="go">
-      <button type="submit" class="primary" id="runButton" disabled>Find candidates</button>
+      <button type="submit" class="primary" id="runButton">Find candidates</button>
       <button type="button" class="plain" id="exampleButton">Try an example search</button>
     </p>
     <div class="bar" id="bar" hidden aria-hidden="true"><span id="barFill"></span></div>
@@ -288,7 +294,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 2, November 2026.</p>
+  <p>Version 2.1, November 2026.</p>
 </div></div>
 </footer>
 
@@ -439,7 +445,17 @@ async function countFor(query) {
 const state = { terms: [], running: false, last: null, shown: SETTINGS.listSize, picked: new Set() };
 let meshTimer = null, meshAbort = null, meshSeq = 0, suggestions = [], activeIndex = -1, listNote = "";
 
-function setTermNote(text) { $("termNote").textContent = text || ""; }
+function setTermNote(text, warn) {
+  $("termNote").textContent = text || "";
+  $("termNote").className = "hint" + (text && warn ? " warn" : "");
+}
+// Text left in the box has not been added. Say so, so that nothing typed is dropped without notice.
+function leftoverNote() {
+  const v = $("termInput").value.trim();
+  if (!v) return false;
+  setTermNote("“" + v + "” has not been added. Choose a heading from the list, or clear the box.", true);
+  return true;
+}
 function closeSuggestions() {
   suggestions = []; activeIndex = -1; listNote = "";
   $("termList").hidden = true; $("termList").replaceChildren();
@@ -450,6 +466,7 @@ function renderSuggestions() {
   const list = $("termList");
   list.replaceChildren();
   if (listNote) list.append(el("li", { class: "message", text: listNote }));
+  else if (suggestions.some((s) => s.kind === "mesh")) list.append(el("li", { class: "listhead", text: "Choose a MeSH heading" }));
   suggestions.forEach((s, i) => {
     const li = el("li", { role: "option", id: "opt" + i, class: s.kind === "words" ? "words" : null,
       "aria-selected": i === activeIndex ? "true" : "false", text: s.display });
@@ -519,11 +536,11 @@ async function lookupMesh(q) {
   activeIndex = suggestions.length ? 0 : -1;
   listNote = "";
   if (found === null) listNote = "The term list did not load. Check your connection and type again.";
-  else if (!mesh.length) listNote = "No MeSH term contains these letters." + (words ? "" : " Try another word.");
+  else if (!mesh.length) listNote = "No MeSH heading contains these letters." + (words ? "" : " Try another word.");
   renderSuggestions();
 }
 function addTerm(s) {
-  if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five entries. Remove one to add another."); closeSuggestions(); return; }
+  if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five entries. Remove one to add another.", true); closeSuggestions(); return; }
   if (!state.terms.some((t) => t.id === s.id)) state.terms.push({ kind: s.kind, label: s.label, id: s.id });
   $("termInput").value = "";
   closeSuggestions();
@@ -543,12 +560,13 @@ function renderChips() {
     });
     chips.append(t.kind === "words"
       ? el("li", { class: "words" }, el("span", { text: "“" + t.label + "”" }), el("span", { class: "kind", text: "exact words" }), remove)
-      : el("li", null, el("span", { text: t.label }), remove));
+      : el("li", null, el("span", { text: t.label }), el("span", { class: "kind", text: "MeSH heading" }), remove));
   });
-  $("runButton").disabled = state.running || state.terms.length === 0;
+  $("runButton").disabled = state.running;
 }
 $("termInput").addEventListener("input", () => {
   clearTimeout(meshTimer);
+  setTermNote("");
   const q = $("termInput").value.trim();
   if (q.length < 2) { closeSuggestions(); return; }
   meshTimer = setTimeout(() => lookupMesh(q), 250);
@@ -558,11 +576,11 @@ $("termInput").addEventListener("keydown", (e) => {
   else if (e.key === "ArrowUp" && suggestions.length) { e.preventDefault(); activeIndex = (activeIndex - 1 + suggestions.length) % suggestions.length; renderSuggestions(); }
   else if (e.key === "Enter") {
     if (suggestions.length && activeIndex >= 0) { e.preventDefault(); addTerm(suggestions[activeIndex]); }
-    else if ($("termInput").value.trim()) { e.preventDefault(); setTermNote("Pick an entry from the list."); }
+    else if ($("termInput").value.trim()) { e.preventDefault(); leftoverNote(); }
   }
   else if (e.key === "Escape") closeSuggestions();
 });
-$("termInput").addEventListener("blur", () => setTimeout(closeSuggestions, 150));
+$("termInput").addEventListener("blur", () => setTimeout(() => { closeSuggestions(); if (document.activeElement !== $("termInput")) leftoverNote(); }, 150));
 
 /* ------------------------------------------------------------------
    Building the PubMed query
@@ -818,7 +836,7 @@ function setProgress(fraction) {
 }
 function setRunning(on) {
   state.running = on;
-  $("runButton").disabled = on || state.terms.length === 0;
+  $("runButton").disabled = on;
   $("runButton").textContent = on ? "Searching" : "Find candidates";
   $("exampleButton").disabled = on;
   $("moreButton").disabled = on;
@@ -865,7 +883,9 @@ async function showTooFew(count, cfg) {
 }
 
 async function run() {
-  if (state.running || !state.terms.length) return;
+  if (state.running) return;
+  if (leftoverNote()) { $("termInput").focus(); return; }
+  if (!state.terms.length) { setTermNote("Choose at least one MeSH heading from the list first.", true); $("termInput").focus(); return; }
   clearResults(); setRunning(true);
   try {
     const cfg = readForm();
@@ -1081,7 +1101,7 @@ function searchRecord() {
     "Reviewer candidate search record",
     "Date: " + L.cfg.today,
     "Tool: Reviewer candidate finder (PubMed search, no manuscript content entered)",
-    "Topic terms: " + (mesh.length ? mesh.join("; ") : "none"),
+    "MeSH headings: " + (mesh.length ? mesh.join("; ") : "none"),
     "Exact words: " + (words.length ? words.join("; ") : "none"),
     "Study design: " + L.cfg.design.label,
     "Author position: " + positionWords(L.cfg),
