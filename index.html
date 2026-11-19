@@ -41,7 +41,8 @@
   p { margin: 0.75rem 0 0; max-width: 42rem; }
   a { color: var(--purple); text-underline-offset: 0.15em; }
   a:hover { color: var(--purple-deep); }
-  :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  :focus-visible { outline: 3px solid var(--navy); outline-offset: 2px; }
+  .tray :focus-visible { outline-color: var(--gold); }
   [hidden] { display: none !important; }
 
   /* Masthead */
@@ -163,12 +164,16 @@
     .head { flex-direction: column; gap: 0.6rem; }
     .facts { grid-template-columns: 1fr; gap: 0; }
     .facts dd { margin-bottom: 0.5rem; }
+    .tray .wrap { gap: 0.4rem 0.5rem; padding-top: 0.55rem; padding-bottom: 0.55rem; }
+    .tray p { flex-basis: 100%; font-size: 1rem; }
+    .tray button { padding: 0.4rem 0.7rem; font-size: 0.95rem; }
+    .tray .wide { display: none; }
   }
   @media print {
     .mast { background: #fff; color: #000; border: 0; }
     .mast h1, .journal, .lede { color: #000; }
     .steps, .keepout, form, .actions, .tray, .pick, .more, #actionNote { display: none !important; }
-    body.has-tray { padding-bottom: 0; }
+    body.has-tray { padding-bottom: 0 !important; }
     .person { break-inside: avoid; }
   }
 </style>
@@ -205,7 +210,7 @@
     <fieldset>
       <legend>MeSH headings for the topic</legend>
       <p class="rule" id="termRule">Choose from the list. Typing alone adds nothing.</p>
-      <p id="termHow">MeSH is the fixed set of subject headings that PubMed uses to index papers. Type a word in the box, and the matching headings appear below it. Everyday words work too: carers finds Caregivers. Click a heading to add it.</p>
+      <p id="termHow">MeSH is the fixed set of subject headings that PubMed uses to index papers. Type a word in the box, and the matching headings appear below it. Everyday words and British spellings work too: carers finds Caregivers, and paediatric finds Pediatrics. Click a heading to add it.</p>
       <p class="hint" id="termHint">For a manuscript on delirium after hip fracture surgery, you would choose Delirium and Hip Fractures. If no heading fits a named tool, drug or method, choose the last option in the list to search for the exact words. A paper counts when it matches every entry.</p>
       <div class="combo">
         <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
@@ -286,16 +291,16 @@
 <div class="tray" id="tray" role="region" aria-label="Shortlist" hidden>
   <div class="wrap">
     <p id="trayText" role="status"></p>
-    <button type="button" id="trayCopy">Copy shortlist</button>
-    <button type="button" id="trayCsv">Download shortlist as CSV</button>
-    <button type="button" class="ghost" id="trayClear">Clear</button>
+    <button type="button" id="trayCopy" aria-label="Copy shortlist">Copy<span class="wide"> shortlist</span></button>
+    <button type="button" id="trayCsv" aria-label="Download shortlist as CSV">Download<span class="wide"> shortlist as</span> CSV</button>
+    <button type="button" class="ghost" id="trayClear" aria-label="Clear shortlist">Clear</button>
   </div>
 </div>
 
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 2.2, November 2026.</p>
+  <p>Version 2.3, November 2026.</p>
 </div></div>
 </footer>
 
@@ -424,9 +429,12 @@ function eutils(endpoint, params, opts) {
       }
       clearTimeout(timer);
       if (res.ok) {
-        if (opts.xml) return text;
+        if (opts.xml) {
+          if (/^\s*\{\s*"error"/.test(text) || /<ERROR>/.test(text.slice(0, 2000))) { if (attempt < 3) { await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
+          return text;
+        }
         const data = parseJson(text);
-        if (data && typeof data.error === "string" && /rate limit/i.test(data.error) && attempt < 3) { await sleep(2000 * attempt); continue; }
+        if (data && typeof data.error === "string") { if (attempt < 3) { await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
         return data;
       }
       if ((res.status === 429 || res.status >= 500) && attempt < 3) { await sleep(2000 * attempt); continue; }
@@ -445,7 +453,19 @@ async function countFor(query) {
    ------------------------------------------------------------------ */
 const state = { terms: [], running: false, last: null, shown: SETTINGS.listSize, picked: new Set() };
 let meshTimer = null, synTimer = null, meshAbort = null, suggestions = [], activeIndex = -1, listNote = "", notePending = false, userMoved = false;
-const look = { seq: 0, q: "", labels: null, syns: null, labelsFailed: false, synsFailed: false };
+const look = { seq: 0, q: "", us: "", labels: null, syns: null, labelsFailed: false, synsFailed: false };
+// MeSH uses American spelling. When the typed word has a British spelling, the page looks up the American one as well.
+const UK_US = [[/paed/g, "ped"], [/anaesth/g, "anesth"], [/haem/g, "hem"], [/aemi/g, "emi"], [/gynaec/g, "gynec"], [/oesoph/g, "esoph"],
+  [/oedem/g, "edem"], [/oestr/g, "estr"], [/foet/g, "fet"], [/faec/g, "fec"], [/aetiol/g, "etiol"], [/rrhoea/g, "rrhea"], [/pnoea/g, "pnea"],
+  [/coeliac/g, "celiac"], [/caesar/g, "cesar"], [/ageing/g, "aging"], [/tumour/g, "tumor"], [/behaviour/g, "behavior"], [/colour/g, "color"],
+  [/labour/g, "labor"], [/centre/g, "center"], [/fibre/g, "fiber"], [/programme/g, "program"], [/sulph/g, "sulf"], [/counsell/g, "counsel"],
+  [/is(ation|ed|ing)\b/g, "iz$1"], [/ys(e|ed|ing)\b/g, "yz$1"]];
+function americanSpelling(q) {
+  const low = String(q || "").toLowerCase();
+  let out = low;
+  for (const [from, to] of UK_US) out = out.replace(from, to);
+  return out === low ? "" : out;
+}
 
 function setTermNote(text, warn) {
   $("termNote").textContent = text || "";
@@ -468,13 +488,14 @@ function closeSuggestions() {
 function renderSuggestions() {
   const list = $("termList");
   list.replaceChildren();
-  if (listNote) list.append(el("li", { class: "message" + (notePending ? " pending" : ""), text: listNote }));
-  else if (suggestions.some((s) => s.kind === "mesh")) list.append(el("li", { class: "listhead", text: "Choose a MeSH heading" }));
+  if (listNote) list.append(el("li", { class: "message" + (notePending ? " pending" : ""), role: "presentation", text: listNote }));
+  else if (suggestions.some((s) => s.kind === "mesh")) list.append(el("li", { class: "listhead", role: "presentation", text: "Choose a MeSH heading" }));
   suggestions.forEach((s, i) => {
     const li = el("li", { role: "option", id: "opt" + i, class: s.kind === "words" ? "words" : null,
       "aria-selected": i === activeIndex ? "true" : "false", text: s.display });
     if (s.syn) li.append(el("span", { class: "syn", text: " includes “" + s.syn + "”" }));
     li.addEventListener("mousedown", (e) => { e.preventDefault(); addTerm(s); });
+    li.addEventListener("click", () => addTerm(s));                        // some screen readers send a click with no mouse press
     list.append(li);
   });
   list.hidden = false;
@@ -530,17 +551,17 @@ async function meshFromPubmed(q, isStale) {
 }
 // Merge the two sources and rank: heading names first, then exact other names, then looser matches.
 function refreshSuggestions() {
-  const q = look.q, ql = q.toLowerCase();
+  const q = look.q, ql = q.toLowerCase(), qa = look.us || ql;
   const byId = new Map();
   const add = (s) => { const old = byId.get(s.id); if (!old || s.score < old.score) byId.set(s.id, s); };
   for (const s of look.labels || []) {
     const l = s.label.toLowerCase();
-    add({ kind: "mesh", label: s.label, id: s.id, display: s.label, syn: "", score: l === ql ? 0 : l.startsWith(ql) ? 1 : 3, order: 0 });
+    add({ kind: "mesh", label: s.label, id: s.id, display: s.label, syn: "", score: l === ql || l === qa ? 0 : l.startsWith(ql) || l.startsWith(qa) ? 1 : 3, order: 0 });
   }
   for (const s of look.syns || []) {
     const l = s.label.toLowerCase(), y = (s.syn || "").toLowerCase();
-    const inLabel = l.includes(ql);
-    const score = l === ql ? 0 : l.startsWith(ql) ? 1 : s.synRank === 0 ? 2 : inLabel ? 3 : y ? 3 + s.synRank : 8;
+    const inLabel = l.includes(ql) || l.includes(qa);
+    const score = l === ql || l === qa ? 0 : l.startsWith(ql) || l.startsWith(qa) ? 1 : s.synRank === 0 ? 2 : inLabel ? 3 : y ? 3 + s.synRank : 8;
     add({ kind: "mesh", label: s.label, id: s.id, display: s.label, syn: inLabel ? "" : s.syn, score, order: s.order });
   }
   const mesh = [...byId.values()].filter((s) => !state.terms.some((t) => t.id === s.id))
@@ -567,7 +588,11 @@ async function lookupLabels(q, seq) {
   meshAbort = ctrl;
   let found = null, timedOut = false;
   const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, LOOKUP_TIMEOUT_MS);
-  try { found = await meshFromLookup(q, ctrl.signal); }
+  try {
+    found = await meshFromLookup(q, ctrl.signal);
+    const us = americanSpelling(q);
+    if (us) found = found.concat(await meshFromLookup(us, ctrl.signal));
+  }
   catch (e) { if (e.name === "AbortError" && !timedOut) { clearTimeout(timer); return; } }   // replaced by newer typing
   clearTimeout(timer);
   if (seq !== look.seq) return;                                                             // newer typing has taken over
@@ -576,7 +601,11 @@ async function lookupLabels(q, seq) {
 }
 async function lookupSynonyms(q, seq) {
   let found = null;
-  try { found = await meshFromPubmed(q, () => seq !== look.seq); } catch (e) { found = null; }
+  try {
+    found = await meshFromPubmed(q, () => seq !== look.seq);
+    const us = americanSpelling(q);
+    if (us && us.length >= 3) found = found.concat(await meshFromPubmed(us, () => seq !== look.seq));
+  } catch (e) { found = null; }
   if (seq !== look.seq) return;
   look.syns = found || []; look.synsFailed = found === null;
   refreshSuggestions();
@@ -612,7 +641,7 @@ $("termInput").addEventListener("input", () => {
   const q = $("termInput").value.trim();
   if (q.length < 2) { closeSuggestions(); return; }
   const seq = ++look.seq;
-  look.q = q; look.labels = null; look.syns = q.length < 3 ? [] : null; look.labelsFailed = false; look.synsFailed = false; userMoved = false;
+  look.q = q; look.us = americanSpelling(q); look.labels = null; look.syns = q.length < 3 ? [] : null; look.labelsFailed = false; look.synsFailed = false; userMoved = false;
   meshTimer = setTimeout(() => lookupLabels(q, seq), 250);
   if (q.length >= 3) synTimer = setTimeout(() => lookupSynonyms(q, seq), 600);
 });
@@ -647,7 +676,22 @@ function readForm() {
 }
 function termClause(t) {
   if (t.kind === "words") return quote(t.label) + (/\s/.test(t.label) ? "[Title/Abstract:~0]" : "[Title/Abstract]");
-  return "(" + quote(t.label) + "[MeSH Terms] OR " + quote(t.label) + "[Title/Abstract])";
+  return "(" + quote(t.label) + "[MeSH Terms] OR " + headingPhrases(t.label).map((x) => quote(x) + "[Title/Abstract]").join(" OR ") + ")";
+}
+// New papers have no MeSH headings yet, so the page also looks for the heading as words in the title or abstract.
+// MeSH writes some headings back to front ("Intensive Care Units, Pediatric") and many in the plural ("Hip Fractures"),
+// so the natural word order and the singular are looked for too.
+function headingPhrases(label) {
+  const parts = String(label).split(",").map((x) => x.trim()).filter(Boolean);
+  const plain = parts.every((x) => /^[\p{L}\s'-]+$/u.test(x));
+  const natural = parts.length > 1 && plain ? parts.slice().reverse().join(" ") : String(label);
+  const out = [natural];
+  const words = natural.split(/\s+/), end = words[words.length - 1];
+  let one = "";
+  if (end.length > 4 && /ies$/i.test(end)) one = end.slice(0, -3) + "y";
+  else if (end.length > 3 && /s$/i.test(end) && !/(ss|us|is)$/i.test(end)) one = end.slice(0, -1);
+  if (one) out.push(words.slice(0, -1).concat(one).join(" "));
+  return out;
 }
 function buildQuery(cfg, terms, fromDate) {
   const topic = (terms || cfg.terms).map(termClause).join(" AND ");
@@ -681,7 +725,7 @@ function tally(papers, position, designIds) {
   };
   for (const p of papers) {
     if (position !== "last" && p.first) add(p, p.first, "first");
-    if (position !== "first" && p.last && (position === "last" || p.last !== p.first)) add(p, p.last, "last");
+    if (position !== "first" && p.last && (position === "last" || !p.solo)) add(p, p.last, "last");
   }
   const qualifying = [];
   for (const g of groups.values()) {
@@ -705,14 +749,17 @@ const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
 
 function parseRecords(xmlText) {
   const doc = new DOMParser().parseFromString(xmlText, "text/xml");
-  for (const art of doc.getElementsByTagName("PubmedArticle")) {
-    const cit = art.getElementsByTagName("MedlineCitation")[0];
+  // Journal papers and book records (such as funder reports) keep their authors in different places.
+  for (const art of [...doc.getElementsByTagName("PubmedArticle"), ...doc.getElementsByTagName("PubmedBookArticle")]) {
+    const cit = art.getElementsByTagName("MedlineCitation")[0] || art.getElementsByTagName("BookDocument")[0];
     if (!cit) continue;
     const pmidNode = cit.getElementsByTagName("PMID")[0];
-    const article = cit.getElementsByTagName("Article")[0];
+    const article = cit.getElementsByTagName("Article")[0] || cit;
     if (!pmidNode || !article) continue;
+    const isAuthors = (n) => n.tagName === "AuthorList" && (n.getAttribute("Type") || "authors") === "authors";
     let listNode = null;
-    for (const child of article.children) if (child.tagName === "AuthorList") { listNode = child; break; }
+    for (const child of article.children) if (isAuthors(child)) { listNode = child; break; }
+    if (!listNode && article === cit) { const book = cit.getElementsByTagName("Book")[0]; if (book) for (const child of book.children) if (isAuthors(child)) { listNode = child; break; } }
     const authors = [];
     if (listNode) for (const a of listNode.children) {
       if (a.tagName !== "Author") continue;
@@ -770,7 +817,7 @@ function clusterGroup(g) {
     items.push({ paper: o.paper, pos: o.pos, node, fetched: !!rec });
   }
   const resolved = items.filter((i) => i.node).map((i) => Object.assign(i, { tokens: foreTokens(i.node.fore) }));
-  const isFull = (i) => i.tokens.length > 0 && i.tokens[0].length > 1;
+  const isFull = (i) => i.tokens.some((t) => t.length > 1);
   const full = resolved.filter(isFull).sort((a, b) => b.tokens.join("").length - a.tokens.join("").length);
   const brief = resolved.filter((i) => !isFull(i));
   const clusters = [];
@@ -800,10 +847,30 @@ function clusterGroup(g) {
   const split = clusters.length > 1;
   return clusters.map((c) => buildPerson(c, split && unread.length > 0, clusters.length >= 3));
 }
+// Words that say little about which institution an affiliation names.
+const AFF_COMMON = new Set(("department departments division section unit school faculty college university universitat universite universidad universita universitaet "
+  + "hospital hospitals hospitalario clinic clinical center centre centro institute institution instituto medicine medical medicina sciences science research "
+  + "health healthcare care national general international group program programme laboratory service services servicio affiliated first second people peoples "
+  + "public graduate state city province district region republic kingdom united states electronic address email with from").split(" "));
+function affWords(affs) {
+  const words = new Set();
+  for (const a of affs) {
+    const parts = a.replace(EMAIL_RE, " ").replace(/\s*(electronic address|e-?mail(?: address)?)\s*:?\s*/gi, " ").split(",").map((x) => x.trim()).filter(Boolean);
+    if (parts.length > 2) parts.pop();                                    // the last part is usually the country
+    for (const w of parts.join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^\p{L}]+/u)) if (w.length >= 4 && !AFF_COMMON.has(w)) words.add(w);
+  }
+  return words;
+}
 function buildPerson(c, atLeast, crowded) {
-  const seen = new Set();
+  const seen = new Set(), seenTitle = new Set();
+  const titleKey = (t) => letters(String(t || "").replace(/^\s*\[translated article\]\s*/i, ""));
   const items = c.items.filter((i) => (seen.has(i.paper.pmid) ? false : (seen.add(i.paper.pmid), true)))
-    .sort((a, b) => newerFirst(a.paper.sort, b.paper.sort));
+    .sort((a, b) => newerFirst(a.paper.sort, b.paper.sort))
+    .filter((i) => {                                                      // the same paper printed twice, such as a translation, counts once
+      const k = titleKey(i.paper.title);
+      if (k.length < 20) return true;
+      return seenTitle.has(k) ? false : (seenTitle.add(k), true);
+    });
   const withNode = items.filter((i) => i.node);
   const fullest = withNode.slice().sort((a, b) => (b.node.fore || "").length - (a.node.fore || "").length)[0];
   const latest = withNode[0];
@@ -822,9 +889,15 @@ function buildPerson(c, atLeast, crowded) {
     }
     if (!email) {
       const found = [...new Set((text.match(EMAIL_RE) || []).map((e) => e.replace(/[.]+$/, "")))];
-      if (found.length) email = { addresses: found, pmid: it.paper.pmid, year: it.paper.year, personal: found.some((e) => PERSONAL_MAIL.test(e)) };
+      if (found.length) email = { addresses: found, pmid: it.paper.pmid, year: it.paper.year, personal: found.some((e) => PERSONAL_MAIL.test(e)), elsewhere: false, affs: it.node.affs };
     }
     if (affiliation && email) break;
+  }
+  // The address can come from an older paper than the affiliation. If the two papers name different institutions, say so.
+  if (affiliation && email && affiliation.pmid !== email.pmid) {
+    const newest = withNode.find((i) => i.paper.pmid === affiliation.pmid);
+    const a = affWords(newest ? newest.node.affs : []), b = affWords(email.affs);
+    if (a.size && b.size && ![...a].some((w) => b.has(w))) email.elsewhere = true;
   }
   return { id: 0, name, authorTerm, items, count: items.length,
            firstCount: items.filter((i) => i.pos === "first").length, lastCount: items.filter((i) => i.pos === "last").length,
@@ -893,13 +966,14 @@ function clearResults() {
   state.last = null; state.shown = SETTINGS.listSize; state.picked = new Set();
   updateTray();
 }
-function stopBox(...paragraphs) { return el("div", { class: "stop" }, ...paragraphs.map((t) => el("p", { text: t }))); }
+function stopBox(...paragraphs) { return el("div", { class: "stop" }, ...paragraphs.filter(Boolean).map((t) => el("p", { text: t }))); }
 
 // When a search is too narrow, work out which single change would give enough papers.
 async function showTooFew(count, cfg) {
   $("summary").append(stopBox(
     "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
-    "The page needs at least " + SETTINGS.minPapers + ". With fewer, the list is too narrow to choose from and the entries may point to one study."));
+    "The page needs at least " + SETTINGS.minPapers + ". With fewer, the list is too narrow to choose from and the entries may point to one study.",
+    count > 0 ? "You can still open these papers in PubMed with the link below and choose from them yourself." : null));
   $("results").hidden = false;
   setStatus("Checking which change would help.");
   const fixes = [];
@@ -945,6 +1019,7 @@ async function run() {
 
     if (count < SETTINGS.minPapers) {
       await showTooFew(count, cfg);
+      if (count > 0) { $("pubmedLink").href = pubmedUrl; $("copyButton").hidden = true; $("csvButton").hidden = true; $("actions").hidden = false; }
       setStatus(""); setProgress(null); $("resultsHead").focus();
       return;
     }
@@ -972,7 +1047,7 @@ async function run() {
         if (!persons.length) continue;
         const sort = x.sortpubdate || "";
         papers.push({ pmid: String(uid), title: cleanTitle(x.title), source: x.source || "", sort, year: sort.slice(0, 4) || String(x.pubdate || "").slice(0, 4),
-                      first: persons[0], last: persons[persons.length - 1] });
+                      first: persons[0], last: persons[persons.length - 1], solo: persons.length === 1 });
       }
     }
 
@@ -994,7 +1069,7 @@ async function run() {
       e && e.message === "network" ? "PubMed did not answer. Check your connection, wait a minute and search again."
                                    : "PubMed returned an error. Wait a minute and search again.",
       "Nothing was saved or sent anywhere else."));
-    $("results").hidden = false; setStatus("");
+    $("results").hidden = false; setStatus(""); $("resultsHead").focus();
   } finally {
     setRunning(false);
     setTimeout(() => setProgress(null), 400);
@@ -1049,6 +1124,7 @@ function render() {
 
   $("pubmedLink").href = L.pubmedUrl;
   $("actions").hidden = false;
+  $("copyButton").hidden = false;
   $("csvButton").hidden = !shown.length;
   $("checks").hidden = !shown.length;
   $("moreRow").hidden = !(shown.length && L.resolver.hasMore(state.shown));
@@ -1076,7 +1152,7 @@ function countLine(p, L) {
 }
 function personEntry(p, rank, L) {
   const li = el("li", { class: "person" + (state.picked.has(p.id) ? " picked" : "") });
-  const pick = el("input", { type: "checkbox" });
+  const pick = el("input", { type: "checkbox", "aria-label": "Shortlist " + p.name });
   pick.checked = state.picked.has(p.id);
   pick.addEventListener("change", () => {
     if (pick.checked) state.picked.add(p.id); else state.picked.delete(p.id);
@@ -1102,6 +1178,7 @@ function personEntry(p, rank, L) {
         (p.email.personal ? " This is a personal mail address, so take extra care to confirm it." : ""))
     : el("dd", { text: "None printed on these PubMed records." }));
   body.append(facts);
+  if (p.email && p.email.elsewhere) body.append(el("p", { class: "flag", text: "Check this address. It comes from a paper that names a different institution from the one shown above. The person may have moved, or two people may share this name." }));
 
   if (p.initialsOnly) body.append(el("p", { class: "flag", text: "Check this name. PubMed gives initials only for these papers, so this entry may combine more than one person." }));
   else if (p.crowded) body.append(el("p", { class: "flag", text: "Several people in PubMed share this surname and first initial. Check the affiliation on each paper." }));
@@ -1113,10 +1190,13 @@ function personEntry(p, rank, L) {
   if (rest.length) {
     const more = el("ul", { class: "papers" });
     rest.forEach((it) => more.append(paperItem(it)));
-    body.append(el("details", null, el("summary", { text: "Show " + rest.length + " more" }), more));
+    body.append(el("details", null, el("summary", { text: "Show " + rest.length + " more", "aria-label": "Show " + rest.length + " more papers by " + p.name }), more));
   }
-  if (p.authorTerm) body.append(el("p", { class: "allpapers" },
-    link(PUBMED + "?term=" + encodeURIComponent('"' + p.authorTerm + '"[Author]') + "&sort=date", "All papers under this name in PubMed")));
+  if (p.authorTerm) {
+    const all = link(PUBMED + "?term=" + encodeURIComponent('"' + p.authorTerm + '"[Author]') + "&sort=date", "All papers under this name in PubMed");
+    all.setAttribute("aria-label", "All papers under the name " + p.authorTerm + " in PubMed");
+    body.append(el("p", { class: "allpapers" }, all));
+  }
   li.append(el("div", { class: "rank", "aria-hidden": "true", text: String(rank) }), body);
   return li;
 }
@@ -1128,13 +1208,14 @@ function updateTray() {
   const n = state.last ? pickedPeople().length : 0;
   $("tray").hidden = n === 0;
   document.body.classList.toggle("has-tray", n > 0);
+  document.body.style.paddingBottom = n > 0 ? ($("tray").offsetHeight + 16) + "px" : "";   // room for the bar, whatever its height
   $("trayText").textContent = n === 1 ? "1 person on your shortlist" : n + " people on your shortlist";
 }
 function shortlistText() {
   return pickedPeople().map((p) => [
     p.name,
     p.affiliation ? p.affiliation.text + " (PubMed record " + p.affiliation.pmid + (p.affiliation.year ? ", " + p.affiliation.year : "") + ")" : "Affiliation: none printed",
-    p.email ? "Email: " + p.email.addresses.join(", ") + " (printed on PubMed record " + p.email.pmid + (p.email.year ? ", " + p.email.year : "") + ")" : "Email: none printed",
+    p.email ? "Email: " + p.email.addresses.join(", ") + " (printed on PubMed record " + p.email.pmid + (p.email.year ? ", " + p.email.year : "") + (p.email.elsewhere ? "; that paper names a different institution, so check it" : "") + ")" : "Email: none printed",
     p.orcid ? "ORCID: https://orcid.org/" + p.orcid : "ORCID: none on record",
     "Papers: " + p.items.slice(0, 5).map((it) => "PMID " + it.paper.pmid).join(", ")
   ].join("\n")).join("\n\n");
@@ -1171,9 +1252,9 @@ async function copyText(text) {
   }
 }
 function csvCell(v) {
-  let s = String(v === null || v === undefined ? "" : v);
-  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;          // stops a spreadsheet from running the cell as a formula
-  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  let s = String(v === null || v === undefined ? "" : v).replace(/[\r\n\t]+/g, " ");
+  if (/^\s*[=+\-@|]/.test(s)) s = "'" + s;            // stops a spreadsheet from running the cell as a formula
+  return /[",]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
 function buildCsv(people) {
   const L = state.last;
@@ -1183,7 +1264,8 @@ function buildCsv(people) {
   people.forEach((p) => rows.push([order.indexOf(p) + 1, p.name, (p.atLeast ? ">=" : "") + p.count, p.firstCount, p.lastCount, L.cfg.design.id ? p.designCount : "",
     p.latestYear, p.affiliation ? p.affiliation.text : "", p.affiliation ? p.affiliation.pmid : "", p.orcid || "",
     p.email ? p.email.addresses.join("; ") : "", p.email ? p.email.pmid : "", p.email && p.email.personal ? "yes" : "",
-    p.initialsOnly ? "initials only" : p.crowded ? "shared surname and initial" : "", p.items.map((it) => it.paper.pmid).join(" ")]));
+    [p.initialsOnly ? "initials only" : p.crowded ? "shared surname and initial" : "", p.email && p.email.elsewhere ? "email from a paper that names a different institution" : ""].filter(Boolean).join("; "),
+    p.items.map((it) => it.paper.pmid).join(" ")]));
   return "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
 }
 function download(text, filename) {
@@ -1228,6 +1310,7 @@ $("trayCsv").addEventListener("click", () => {
   if (!state.last) return;
   download(buildCsv(pickedPeople()), "reviewer-shortlist-" + state.last.cfg.today + ".csv");
 });
+window.addEventListener("resize", () => { if (!$("tray").hidden) updateTray(); });
 $("trayClear").addEventListener("click", () => { state.picked = new Set(); if (state.last) render(); else updateTray(); });
 renderChips();
 // On a computer, put the cursor in the term box so the editor can start typing at once.
