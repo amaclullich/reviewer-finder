@@ -123,6 +123,12 @@
   .checks ol { margin: 0.6rem 0 0; padding-left: 1.3rem; max-width: 40rem; }
   .checks li { margin-top: 0.3rem; }
   .flag { background: var(--note-bg); color: var(--note-ink); padding: 0.55rem 0.8rem; margin-top: 0.9rem; max-width: 40rem; }
+  .flag.conflict { background: var(--stop-bg); color: var(--stop-ink); }
+  .flag.conflict a { color: inherit; }
+  .pair { color: var(--muted); font-size: 0.95rem; margin-top: 0.6rem; max-width: 40rem; }
+  .person .divider { grid-column: 1 / -1; margin: 0 0 1.4rem; padding-top: 0.7rem; border-top: 3px solid var(--navy); font-family: var(--serif); font-size: 1.15rem; color: var(--navy); max-width: none; }
+  .conflict { margin-top: 2rem; max-width: 42rem; }
+  .conflict input { font: inherit; width: 100%; padding: 0.6rem 0.75rem; border: 1.5px solid var(--muted); border-radius: 4px; margin-top: 0.5rem; background: #fff; color: var(--ink); }
   .people { list-style: none; padding: 0; margin: 2rem 0 0; border-bottom: 1px solid var(--rule); }
   .person { display: grid; grid-template-columns: 4rem 1fr; border-top: 1px solid var(--rule); padding: 1.6rem 0.75rem 1.7rem; }
   .person.picked { background: var(--tint); box-shadow: inset 0.3rem 0 0 var(--purple); }
@@ -172,7 +178,7 @@
   @media print {
     .mast { background: #fff; color: #000; border: 0; }
     .mast h1, .journal, .lede { color: #000; }
-    .steps, .keepout, form, .actions, .tray, .pick, .more, #actionNote { display: none !important; }
+    .steps, .keepout, form, .actions, .tray, .pick, .more, #actionNote, #privacyNote, #staleNote, .conflict { display: none !important; }
     body.has-tray { padding-bottom: 0 !important; }
     .person { break-inside: avoid; }
   }
@@ -202,8 +208,9 @@
 
   <section class="keepout" aria-labelledby="keepoutHead">
     <h2 id="keepoutHead">Keep the manuscript out of this page</h2>
-    <p>Enter MeSH headings and, if you need them, a few exact words such as the name of a tool or a drug. Leave out the title, the abstract, the findings and the authors' names.</p>
-    <p>The page sends your entries to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
+    <p>Enter MeSH headings and, if you need them, a few exact words such as the name of a tool or a drug. Leave out the title, the abstract and the findings. Leave out a trial name or acronym that would identify the manuscript.</p>
+    <p>The page sends your search entries to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
+    <p>The authors' surnames have one place: the conflict check under the results. That box is read in your browser and sent nowhere.</p>
   </section>
 
   <form id="searchForm" novalidate>
@@ -235,6 +242,7 @@
           <option value="either" selected>First or last author</option>
           <option value="first">First author only</option>
           <option value="last">Last author only</option>
+          <option value="any">Any author, including co-authors</option>
         </select>
       </div>
       <div>
@@ -255,7 +263,9 @@
 
     <p class="go">
       <button type="submit" class="primary" id="runButton">Find candidates</button>
+      <button type="button" class="secondary" id="stopButton" hidden>Stop</button>
       <button type="button" class="plain" id="exampleButton">Try an example search</button>
+      <button type="button" class="plain" id="resetButton">Start a new search</button>
     </p>
     <div class="bar" id="bar" hidden aria-hidden="true"><span id="barFill"></span></div>
     <p class="status" id="status" role="status" aria-live="polite"></p>
@@ -264,23 +274,32 @@
   <section id="results" aria-labelledby="resultsHead" hidden>
     <h2 id="resultsHead" tabindex="-1">Candidates</h2>
     <div id="summary"></div>
+    <p class="flag" id="staleNote" role="status" hidden>You have changed the search since this list was made. Press Find candidates to update it.</p>
     <div class="actions" id="actions" hidden>
       <button type="button" class="secondary" id="copyButton">Copy search record</button>
       <button type="button" class="secondary" id="csvButton">Download list as CSV</button>
       <a id="pubmedLink" target="_blank" rel="noopener noreferrer">Open this search in PubMed</a>
     </div>
     <p class="hint" id="actionNote" role="status"></p>
+    <p class="hint" id="privacyNote" hidden>Names and addresses on this page are personal details from public PubMed records. Use them only to invite reviewers. The list download leaves out email addresses, and the shortlist download includes them. Delete downloaded files when you have finished.</p>
 
     <section class="checks" id="checks" aria-labelledby="checksHead" hidden>
       <h3 id="checksHead">Before you invite anyone</h3>
       <ol>
         <li>Open a linked paper and confirm that this is the right person for the topic.</li>
         <li>If an email is shown, open the linked PubMed record and compare the address.</li>
-        <li>Check for conflicts with the manuscript's authors: shared papers in recent years, or the same institution. The manuscript's own authors may appear in this list.</li>
+        <li>Check for conflicts with the manuscript's authors: shared papers in recent years, or the same institution. The manuscript's own authors may appear in this list. The conflict check below marks some of these for you.</li>
         <li>Check the journal's records for recent invitations to the same person.</li>
         <li>Aim for a mix of career stage, country and discipline.</li>
       </ol>
       <p>PubMed has no unique number for each author. The page separates people by surname and first name. Two people with the same full name can appear as one entry, so check the affiliation on each paper.</p>
+    </section>
+
+    <section class="conflict" id="conflict" aria-labelledby="conflictLabel" hidden>
+      <label class="field-label" id="conflictLabel" for="conflictInput">Mark possible conflicts (optional)</label>
+      <p class="hint" id="conflictHint">Type the surnames of the manuscript's authors, with commas between them. The page marks anyone on the list who has the same surname or has written a listed paper with one of them. What you type stays in this browser. It is sent nowhere, and it is left out of every copy and download.</p>
+      <input type="text" id="conflictInput" autocomplete="off" spellcheck="false" aria-describedby="conflictHint" placeholder="For example: Okafor, Lindqvist, Tan">
+      <p class="hint" id="conflictNote" role="status"></p>
     </section>
 
     <ol class="people" id="people"></ol>
@@ -300,7 +319,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 2.3, November 2026.</p>
+  <p>Version 3.0, November 2026.</p>
 </div></div>
 </footer>
 
@@ -314,7 +333,8 @@ const SETTINGS = {
   journalLine: "For handling editors of the journal Delirium",
   contactEmail: "",              // optional: NCBI asks tool owners to give a contact address
   toolName: "reviewer_candidate_finder",
-  minPapers: 50,                 // the search stops below this number of matching papers
+  minPapers: 20,                 // the search stops below this number of matching papers
+  fullPapers: 50,                // below this number the list is marked as short, and people with one matching paper are included
   maxPapersRead: 3000,           // the page reads at most this many of the most recent papers
   listSize: 20,                  // people shown at first, and added by "Show 20 more"
   minOwnPapers: 2,               // papers in the chosen author position needed to qualify
@@ -330,7 +350,7 @@ const DESIGNS = [
   { id: "obs", label: "Cohort or observational",
     query: '("Cohort Studies"[MeSH Terms] OR "Case-Control Studies"[MeSH Terms] OR "Cross-Sectional Studies"[MeSH Terms] OR observational study[Publication Type])' },
   { id: "dta", label: "Diagnostic accuracy",
-    query: '("Sensitivity and Specificity"[MeSH Terms] OR "diagnostic accuracy"[Title/Abstract] OR "Diagnostic Tests, Routine"[MeSH Terms])' },
+    query: '("Sensitivity and Specificity"[MeSH Terms] OR "diagnostic accuracy"[Title/Abstract] OR (sensitivity[Title/Abstract] AND specificity[Title/Abstract]) OR "Validation Study"[Publication Type])' },
   { id: "sr", label: "Systematic review",
     query: '(systematic review[Publication Type] OR meta-analysis[Publication Type] OR "systematic review"[Title])' },
   { id: "qual", label: "Qualitative",
@@ -360,7 +380,7 @@ const REQUEST_TIMEOUT_MS = 60000;
 const LOOKUP_TIMEOUT_MS = 6000;
 const SUMMARY_BATCH = 500;
 const RECORD_BATCH = 150;
-const PAPERS_PER_GROUP = 12;
+const PAPERS_PER_GROUP = 40;
 
 /* ------------------------------------------------------------------
    Small helpers
@@ -406,6 +426,7 @@ function parseJson(text) {
   try { return JSON.parse(text); }
   catch (e) { return JSON.parse(text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, " ")); }
 }
+let liveCtrl = null;          // the request in progress, so that Stop can end it
 function eutils(endpoint, params, opts) {
   opts = opts || {};
   const body = new URLSearchParams(params);
@@ -413,8 +434,10 @@ function eutils(endpoint, params, opts) {
   if (SETTINGS.contactEmail) body.set("email", SETTINGS.contactEmail);
   return queue(async () => {
     for (let attempt = 1; ; attempt++) {
+      if (state.stopped) throw new Error("stopped");
       let res = null, text = "";
       const ctrl = new AbortController();
+      liveCtrl = ctrl;
       const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);   // a request that hangs counts as a failure
       try {
         res = opts.post
@@ -423,6 +446,7 @@ function eutils(endpoint, params, opts) {
         if (res.ok) text = await res.text();
       } catch (e) {
         clearTimeout(timer);
+        if (state.stopped) throw new Error("stopped");
         if (attempt >= 3) throw new Error("network");
         await sleep(1500 * attempt);
         continue;
@@ -451,7 +475,7 @@ async function countFor(query) {
    Entry picker. An entry is a MeSH term from the lookup, or a short
    run of exact words. Nothing else can be added.
    ------------------------------------------------------------------ */
-const state = { terms: [], running: false, last: null, shown: SETTINGS.listSize, picked: new Set() };
+const state = { terms: [], running: false, stopped: false, last: null, notes: null, shown: SETTINGS.listSize, picked: new Set() };
 let meshTimer = null, synTimer = null, meshAbort = null, suggestions = [], activeIndex = -1, listNote = "", notePending = false, userMoved = false;
 const look = { seq: 0, q: "", us: "", labels: null, syns: null, labelsFailed: false, synsFailed: false };
 // MeSH uses American spelling. When the typed word has a British spelling, the page looks up the American one as well.
@@ -576,7 +600,7 @@ function refreshSuggestions() {
   if (activeId) { const keep = suggestions.findIndex((s) => s.id === activeId); if (keep >= 0) activeIndex = keep; }
   listNote = ""; notePending = false;
   if (!mesh.length) {
-    if (look.labelsFailed && look.synsFailed) listNote = "The term list did not load. Check your connection and type again.";
+    if (look.labelsFailed && (look.synsFailed || q.length < 3)) listNote = "The term list did not load. Check your connection and type again.";
     else if (pending) { listNote = "Looking for matching headings."; notePending = true; }
     else listNote = "No MeSH heading matches these letters." + (words ? "" : " Try another word.");
   }
@@ -634,6 +658,7 @@ function renderChips() {
       : el("li", null, el("span", { text: t.label }), el("span", { class: "kind", text: "MeSH heading" }), remove));
   });
   $("runButton").disabled = state.running;
+  checkStale();
 }
 $("termInput").addEventListener("input", () => {
   clearTimeout(meshTimer); clearTimeout(synTimer);
@@ -674,6 +699,11 @@ function readForm() {
   return { terms: state.terms.slice(), years, fromDate: dateYearsAgo(years), design, position: $("positionSelect").value,
            exclude: $("excludeBox").checked, today: now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate()) };
 }
+// The search as it stands on the form, to tell when the list on screen no longer matches it.
+function formSignature() {
+  return [state.terms.map((t) => t.id).join("|"), $("designSelect").value, $("positionSelect").value, $("yearsSelect").value, $("excludeBox").checked].join("~");
+}
+function checkStale() { $("staleNote").hidden = !(state.last && !state.running && state.last.sig !== formSignature()); }
 function termClause(t) {
   if (t.kind === "words") return quote(t.label) + (/\s/.test(t.label) ? "[Title/Abstract:~0]" : "[Title/Abstract]");
   return "(" + quote(t.label) + "[MeSH Terms] OR " + headingPhrases(t.label).map((x) => quote(x) + "[Title/Abstract]").join(" OR ") + ")";
@@ -714,23 +744,24 @@ function parseName(name) {
   const firstInitial = initials ? initials[0].toLowerCase() : "";
   return { surnameNorm, firstInitial, key: surnameNorm + "|" + firstInitial };
 }
-function tally(papers, position, designIds) {
+function tally(papers, position, designIds, minOwn) {
   const groups = new Map();
-  const add = (paper, name, pos) => {
+  const add = (paper, name, pos, idx) => {
     const pn = parseName(name);
     if (!pn) return;
     let g = groups.get(pn.key);
     if (!g) { g = { key: pn.key, surnameNorm: pn.surnameNorm, firstInitial: pn.firstInitial, own: [] }; groups.set(pn.key, g); }
-    g.own.push({ paper, pos });
+    g.own.push({ paper, pos, idx });
   };
   for (const p of papers) {
-    if (position !== "last" && p.first) add(p, p.first, "first");
-    if (position !== "first" && p.last && (position === "last" || !p.solo)) add(p, p.last, "last");
+    if (position === "any") { p.all.forEach((name, i) => add(p, name, i === 0 ? "first" : i === p.all.length - 1 ? "last" : "middle", i)); continue; }
+    if (position !== "last" && p.first) add(p, p.first, "first", 0);
+    if (position !== "first" && p.last && (position === "last" || !p.solo)) add(p, p.last, "last", p.all.length - 1);
   }
   const qualifying = [];
   for (const g of groups.values()) {
     const ids = new Set(g.own.map((o) => o.paper.pmid));
-    if (ids.size < SETTINGS.minOwnPapers) continue;
+    if (ids.size < minOwn) continue;
     g.bound = ids.size;                                                   // the most papers any one person in this group can have
     g.dBound = designIds ? [...ids].filter((id) => designIds.has(id)).length : 0;
     g.own.sort((a, b) => newerFirst(a.paper.sort, b.paper.sort));
@@ -811,8 +842,12 @@ function clusterGroup(g) {
     const rec = records.get(o.paper.pmid);
     let node = null;
     if (rec && rec.authors.length) {
-      const edge = o.pos === "first" ? rec.authors[0] : rec.authors[rec.authors.length - 1];
-      node = nodeMatches(edge, g) ? edge : null;
+      let edge = o.pos === "first" ? rec.authors[0] : o.pos === "last" ? rec.authors[rec.authors.length - 1] : rec.authors[o.idx];
+      if (o.pos === "middle" && !(edge && nodeMatches(edge, g))) {            // the two author lists differ in length: accept one clear match only
+        const same = rec.authors.slice(1, -1).filter((a) => nodeMatches(a, g));
+        edge = same.length === 1 ? same[0] : null;
+      }
+      node = edge && nodeMatches(edge, g) ? edge : null;
     }
     items.push({ paper: o.paper, pos: o.pos, node, fetched: !!rec });
   }
@@ -842,10 +877,9 @@ function clusterGroup(g) {
     else if (homes.length === 0) { const c = { tokens: it.tokens, orcid: "", items: [], initialsOnly: true }; clusters.push(c); put(c, it); }
     // more than one possible home: the paper is left out, because the record does not say whose it is
   }
+  // Papers past the reading limit for one name are left out, and the count then says "possibly more".
   const unread = items.filter((i) => !i.fetched);
-  if (unread.length && clusters.length === 1) for (const it of unread) clusters[0].items.push(it);
-  const split = clusters.length > 1;
-  return clusters.map((c) => buildPerson(c, split && unread.length > 0, clusters.length >= 3));
+  return clusters.map((c) => buildPerson(c, unread.length > 0, clusters.length >= 3));
 }
 // Words that say little about which institution an affiliation names.
 const AFF_COMMON = new Set(("department departments division section unit school faculty college university universitat universite universidad universita universitaet "
@@ -901,6 +935,8 @@ function buildPerson(c, atLeast, crowded) {
   }
   return { id: 0, name, authorTerm, items, count: items.length,
            firstCount: items.filter((i) => i.pos === "first").length, lastCount: items.filter((i) => i.pos === "last").length,
+           middleCount: items.filter((i) => i.pos === "middle").length,
+           surnameNorm: latest ? letters(latest.node.last) : "", tokens: c.tokens, ownNodes: new Set(withNode.map((i) => i.node)),
            latestYear: items.length ? items[0].paper.year : "", orcid: c.orcid, affiliation, email,
            initialsOnly: c.initialsOnly, crowded: crowded && !c.initialsOnly, atLeast, designCount: 0 };
 }
@@ -910,7 +946,7 @@ function orderPeople(people, byDesign) {
     newerFirst(a.items[0].paper.sort, b.items[0].paper.sort) || a.name.localeCompare(b.name));
 }
 // Reads full records in rounds, and stops once no unread name could still enter the first n places.
-function makeResolver(groups, designIds) {
+function makeResolver(groups, designIds, minOwn) {
   const R = { groups, designIds, cursor: 0, people: [], nextId: 1 };
   R.secure = (n) => {
     const next = groups[R.cursor];
@@ -933,7 +969,7 @@ function makeResolver(groups, designIds) {
       }
       await fetchRecords([...want], onProgress);
       for (const g of batch) for (const p of clusterGroup(g)) {
-        if (p.count < SETTINGS.minOwnPapers || !p.name) continue;
+        if (p.count < minOwn || !p.name) continue;
         p.id = R.nextId++;
         if (designIds) p.designCount = p.items.filter((i) => designIds.has(i.paper.pmid)).length;
         R.people.push(p);
@@ -958,11 +994,15 @@ function setRunning(on) {
   $("runButton").disabled = on;
   $("runButton").textContent = on ? "Searching" : "Find candidates";
   $("exampleButton").disabled = on;
+  $("resetButton").disabled = on;
   $("moreButton").disabled = on;
+  $("stopButton").hidden = !on;
+  if (!on) state.stopped = false;
 }
 function clearResults() {
   $("results").hidden = true; $("summary").replaceChildren(); $("people").replaceChildren();
   $("actions").hidden = true; $("checks").hidden = true; $("moreRow").hidden = true; $("actionNote").textContent = "";
+  $("privacyNote").hidden = true; $("conflict").hidden = true; $("conflictNote").textContent = ""; $("staleNote").hidden = true; state.notes = null;
   state.last = null; state.shown = SETTINGS.listSize; state.picked = new Set();
   updateTray();
 }
@@ -1008,7 +1048,7 @@ async function run() {
   if (!state.terms.length) { setTermNote("Choose at least one MeSH heading from the list first.", true); $("termInput").focus(); return; }
   clearResults(); setRunning(true);
   try {
-    const cfg = readForm();
+    const cfg = readForm(), sig = formSignature();
     const query = buildQuery(cfg);
     setStatus("Searching PubMed."); setProgress(0.04);
     const es = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", usehistory: "y", retmax: "0", sort: "pub_date", term: query }, { post: true });
@@ -1042,29 +1082,31 @@ async function run() {
       const res = (sm && sm.result) || {};
       for (const uid of res.uids || []) {
         const x = res[uid];
-        if (!x || x.error || !Array.isArray(x.authors)) continue;
+        if (!x || x.error || !Array.isArray(x.authors) || !/^\d+$/.test(String(uid))) continue;
         const persons = x.authors.filter((a) => a && a.authtype === "Author" && a.name).map((a) => a.name);
         if (!persons.length) continue;
         const sort = x.sortpubdate || "";
         papers.push({ pmid: String(uid), title: cleanTitle(x.title), source: x.source || "", sort, year: sort.slice(0, 4) || String(x.pubdate || "").slice(0, 4),
-                      first: persons[0], last: persons[persons.length - 1], solo: persons.length === 1 });
+                      first: persons[0], last: persons[persons.length - 1], solo: persons.length === 1, all: persons });
       }
     }
 
-    const groups = tally(papers, cfg.position, designIds);
+    const minOwn = count < SETTINGS.fullPapers ? 1 : SETTINGS.minOwnPapers;   // a small field: one matching paper is enough to be listed
+    const groups = tally(papers, cfg.position, designIds, minOwn);
     setStatus("Checking names against the full records."); setProgress(0.62);
-    const resolver = makeResolver(groups, designIds);
+    const resolver = makeResolver(groups, designIds, minOwn);
     await resolver.ensure(SETTINGS.listSize, (done, total) => {
       setStatus("Checking names against the full records: " + fmt(done) + " of " + fmt(total) + "."); setProgress(0.62 + 0.35 * (done / total));
     });
 
-    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, designCount, resolver };
+    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, designCount, resolver, minOwn, sig };
     setProgress(1);
     render();
     setStatus("");
     $("resultsHead").focus();
   } catch (e) {
     clearResults();
+    if (e && e.message === "stopped") { setStatus("Search stopped."); return; }
     $("summary").append(stopBox(
       e && e.message === "network" ? "PubMed did not answer. Check your connection, wait a minute and search again."
                                    : "PubMed returned an error. Wait a minute and search again.",
@@ -1082,12 +1124,16 @@ async function showMore() {
   try {
     state.shown += SETTINGS.listSize;
     $("actionNote").textContent = "Checking more names.";
+    const before = $("people").children.length;
     await L.resolver.ensure(state.shown);
-    $("actionNote").textContent = "";
     render();
+    const now = $("people").children.length;
+    $("actionNote").textContent = now > before ? "The list now shows " + now + " people." : "Nobody is left to add.";
+    const firstNew = $("people").children[before];
+    if (firstNew) { const h = firstNew.querySelector("h3"); h.setAttribute("tabindex", "-1"); h.focus(); }
   } catch (e) {
     state.shown -= SETTINGS.listSize;
-    $("actionNote").textContent = "PubMed did not answer. Wait a minute and press the button again.";
+    $("actionNote").textContent = e && e.message === "stopped" ? "Stopped." : "PubMed did not answer. Wait a minute and press the button again.";
   } finally {
     setRunning(false);
   }
@@ -1099,7 +1145,7 @@ async function showMore() {
 function allPeople() { const L = state.last; return orderPeople(L.resolver.people, !!L.cfg.design.id); }
 function shownPeople() { return allPeople().slice(0, state.shown); }
 function pickedPeople() { return allPeople().filter((p) => state.picked.has(p.id)); }
-function positionWords(cfg) { return cfg.position === "first" ? "first author" : cfg.position === "last" ? "last author" : "first or last author"; }
+function positionWords(cfg) { return cfg.position === "first" ? "first author" : cfg.position === "last" ? "last author" : cfg.position === "any" ? "listed as an author" : "first or last author"; }
 
 function render() {
   const L = state.last;
@@ -1114,25 +1160,44 @@ function render() {
 
   const total = L.resolver.people.length + (L.resolver.groups.length - L.resolver.cursor);
   const exact = L.resolver.cursor >= L.resolver.groups.length;
+  const few = L.minOwn === 1;
+  const onWhat = few ? " on at least one of them" : " on at least two of them";
+  if (few) summary.append(el("p", { class: "flag", text: "Only " + fmt(L.count) + " papers match, so treat this as a short list. It includes people with one matching paper. Several entries may come from the same study." }));
   if (!shown.length) {
-    summary.append(stopBox("Nobody is " + positionWords(L.cfg) + " on two or more of these papers.", "Remove an entry, widen the period or change the author position."));
+    summary.append(stopBox("Nobody is " + positionWords(L.cfg) + (few ? " on these papers." : " on two or more of these papers."), "Remove an entry, widen the period or change the author position."));
   } else if (exact && total <= SETTINGS.listSize) {
-    summary.append(el("p", { text: "Only " + total + (total === 1 ? " person is " : " people are ") + positionWords(L.cfg) + " on at least two of them, so the list is shorter than " + SETTINGS.listSize + ". Remove an entry or widen the period to see more." }));
+    summary.append(el("p", { text: "Only " + total + (total === 1 ? " person is " : " people are ") + positionWords(L.cfg) + onWhat + ", so the list is shorter than " + SETTINGS.listSize + ". Remove an entry or widen the period to see more." }));
   } else {
-    summary.append(el("p", { text: (exact ? "" : "About ") + fmt(total) + " people are " + positionWords(L.cfg) + " on at least two of them. The list shows the top " + shown.length + "." }));
+    summary.append(el("p", { text: (exact ? "" : "About ") + fmt(total) + " people are " + positionWords(L.cfg) + onWhat + ". The list shows the top " + shown.length + "." }));
   }
 
   $("pubmedLink").href = L.pubmedUrl;
   $("actions").hidden = false;
   $("copyButton").hidden = false;
   $("csvButton").hidden = !shown.length;
+  $("privacyNote").hidden = !shown.length;
   $("checks").hidden = !shown.length;
+  $("conflict").hidden = !shown.length;
   $("moreRow").hidden = !(shown.length && L.resolver.hasMore(state.shown));
 
+  const notes = linkNotes(shown);
+  state.notes = notes;
+  const typed = conflictNames().length, marked = shown.filter((p) => { const n = notes.get(p.id); return n.self || n.withAuthors.size; }).length;
+  $("conflictNote").textContent = !typed ? "" : marked ? marked + " of " + shown.length + (marked === 1 ? " entries is" : " entries are") + " marked. The check covers the papers listed here, so check other links yourself."
+                                                        : "No entry on this list is marked. The check covers the papers listed here, so check other links yourself.";
   const list = $("people");
   list.replaceChildren();
-  shown.forEach((p, i) => list.append(personEntry(p, i + 1, L)));
+  let divided = false;
+  shown.forEach((p, i) => {
+    const li = personEntry(p, i + 1, L, notes.get(p.id));
+    if (L.cfg.design.id && !divided && p.designCount === 0) {
+      divided = true;
+      li.prepend(el("p", { class: "divider", text: i ? "From here down, nobody has a matching paper of the design you chose." : "Nobody on this list has a matching paper of the design you chose." }));
+    }
+    list.append(li);
+  });
   $("results").hidden = false;
+  checkStale();
   updateTray();
 }
 function paperItem(it) {
@@ -1144,13 +1209,50 @@ function countLine(p, L) {
   const parts = [];
   if (p.firstCount) parts.push("first author on " + p.firstCount);
   if (p.lastCount) parts.push("last author on " + p.lastCount);
-  let s = parts.join(" and ");
+  if (p.middleCount) parts.push("co-author on " + p.middleCount);
+  let s = parts.length > 2 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts.join(" and ");
   s = s.charAt(0).toUpperCase() + s.slice(1) + " matching " + papersWord(p.count) + (p.atLeast ? ", and possibly more." : ".");
-  if (p.latestYear) s += " The latest is from " + p.latestYear + ".";
+  const old = Number(L.cfg.today.slice(0, 4)) - 3;
+  if (p.latestYear) s += " The latest is from " + p.latestYear + (Number(p.latestYear) <= old ? ", so check that this person still works in the field." : ".");
   if (L.cfg.design.id) s += " " + p.designCount + (p.designCount === 1 ? " fits" : " fit") + " the design you chose.";
   return s;
 }
-function personEntry(p, rank, L) {
+// Who on the list has written a listed paper with whom, and who matches a surname typed into the conflict check.
+function sameAuthor(a, p) {
+  return letters(a.last) === p.surnameNorm && namesCompatible(foreTokens(a.fore || (a.initials || "").split("").join(" ")), p.tokens) && !(a.orcid && p.orcid && a.orcid !== p.orcid);
+}
+function conflictNames() {
+  return $("conflictInput").value.split(/[,;\n]+/).map((x) => x.trim()).filter(Boolean).map((x) => {
+    const tokens = x.split(/\s+/);
+    let initial = "";
+    if (tokens.length >= 2 && /^[A-Z]{1,4}\.?$/.test(tokens[tokens.length - 1])) initial = tokens.pop()[0].toLowerCase();
+    const forms = new Set([letters(tokens.join(" "))]);
+    if (tokens.length >= 2) { forms.add(letters(tokens[tokens.length - 1])); forms.add(letters(tokens.slice(1).join(" "))); }
+    forms.delete("");
+    return { forms, initial };
+  }).filter((n) => [...n.forms].some((f) => f.length >= 2));
+}
+function linkNotes(shown) {
+  const names = conflictNames();
+  const hit = (a) => names.some((n) => n.forms.has(letters(a.last)) && (!n.initial || ((a.initials || a.fore || "")[0] || "").toLowerCase() === n.initial));
+  const notes = new Map();
+  for (const p of shown) {
+    const withOthers = [], withAuthors = new Map();
+    for (const it of p.items) {
+      const rec = records.get(it.paper.pmid);
+      if (!rec) continue;
+      for (const a of rec.authors) {
+        if (p.ownNodes.has(a)) continue;
+        for (const q of shown) if (q !== p && q.surnameNorm && sameAuthor(a, q) && !withOthers.includes(q)) withOthers.push(q);
+        if (names.length && hit(a)) { const k = ((a.fore || a.initials || "") + " " + a.last).trim(); if (!withAuthors.has(k)) withAuthors.set(k, it.paper.pmid); }
+      }
+    }
+    const self = names.length > 0 && p.surnameNorm && names.some((n) => n.forms.has(p.surnameNorm) && (!n.initial || (p.tokens[0] || "")[0] === n.initial));
+    notes.set(p.id, { withOthers, withAuthors, self });
+  }
+  return notes;
+}
+function personEntry(p, rank, L, note) {
   const li = el("li", { class: "person" + (state.picked.has(p.id) ? " picked" : "") });
   const pick = el("input", { type: "checkbox", "aria-label": "Shortlist " + p.name });
   pick.checked = state.picked.has(p.id);
@@ -1174,12 +1276,24 @@ function personEntry(p, rank, L) {
   facts.append(p.email
     ? el("dd", null, p.email.addresses.join(", ") + ". Printed on ", link(PUBMED + p.email.pmid + "/", "PubMed record " + p.email.pmid),
         p.email.year ? ", " + p.email.year + "." : ".", " Open the record and compare before you use it." +
+        (p.email.year && Number(p.email.year) <= Number(L.cfg.today.slice(0, 4)) - 3 ? " The address is at least three years old and may be out of date." : "") +
         (p.email.addresses.length > 1 ? " More than one address is printed, so check which one belongs to this person." : "") +
         (p.email.personal ? " This is a personal mail address, so take extra care to confirm it." : ""))
     : el("dd", { text: "None printed on these PubMed records." }));
   body.append(facts);
   if (p.email && p.email.elsewhere) body.append(el("p", { class: "flag", text: "Check this address. It comes from a paper that names a different institution from the one shown above. The person may have moved, or two people may share this name." }));
 
+  if (note && note.self) body.append(el("p", { class: "flag conflict", text: "Possible conflict. This person has the same surname as one of the manuscript's authors. Check that it is a different person." }));
+  if (note && note.withAuthors.size) {
+    const para = el("p", { class: "flag conflict", text: "Possible conflict. Has written a listed paper with " });
+    [...note.withAuthors].forEach(([name, pmid], i, all) => para.append(i ? (i === all.length - 1 ? " and " : ", ") : "", name + " (", link(PUBMED + pmid + "/", "PubMed record " + pmid), ")"));
+    para.append(".");
+    body.append(para);
+  }
+  if (note && note.withOthers.length) {
+    const who = note.withOthers.map((q) => q.name);
+    body.append(el("p", { class: "pair", text: "Has written a listed paper with " + (who.length > 1 ? who.slice(0, -1).join(", ") + " and " + who[who.length - 1] + ", who are" : who[0] + ", who is") + " also on this list. If you invite both, you may get one group's view twice." }));
+  }
   if (p.initialsOnly) body.append(el("p", { class: "flag", text: "Check this name. PubMed gives initials only for these papers, so this entry may combine more than one person." }));
   else if (p.crowded) body.append(el("p", { class: "flag", text: "Several people in PubMed share this surname and first initial. Check the affiliation on each paper." }));
 
@@ -1227,11 +1341,11 @@ function searchRecord() {
   return [
     "Reviewer candidate search record",
     "Date: " + L.cfg.today,
-    "Tool: Reviewer candidate finder (PubMed search, no manuscript content entered)",
+    "Tool: Reviewer candidate finder (PubMed search, no manuscript content sent)",
     "MeSH headings: " + (mesh.length ? mesh.join("; ") : "none"),
     "Exact words: " + (words.length ? words.join("; ") : "none"),
     "Study design: " + L.cfg.design.label,
-    "Author position: " + positionWords(L.cfg),
+    "Author position: " + (L.cfg.position === "any" ? "any author" : positionWords(L.cfg)),
     "Period: last " + L.cfg.years + " years (from " + L.cfg.fromDate + ")",
     "Left out letters, editorials, comments, corrections, retracted papers and preprints: " + (L.cfg.exclude ? "yes" : "no"),
     "Papers matched: " + L.count + " (read: " + L.read + ")",
@@ -1256,16 +1370,22 @@ function csvCell(v) {
   if (/^\s*[=+\-@|]/.test(s)) s = "'" + s;            // stops a spreadsheet from running the cell as a formula
   return /[",]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
-function buildCsv(people) {
+// Email addresses go into the shortlist download only. Nothing typed into the conflict check goes into any download.
+function buildCsv(people, withEmail) {
   const L = state.last;
-  const rows = [["rank", "name", "papers", "first_author_papers", "last_author_papers", "design_papers", "latest_year", "affiliation", "affiliation_pmid",
-                 "orcid", "email_printed", "email_pmid", "personal_mail", "name_check", "pmids"]];
+  const mail = withEmail ? ["email_printed", "email_pmid", "personal_mail"] : [];
+  const rows = [["rank", "name", "papers", "first_author_papers", "last_author_papers", "other_author_papers", "design_papers", "latest_year", "affiliation", "affiliation_pmid",
+                 "orcid", ...mail, "name_check", "shares_papers_with", "pmids"]];
   const order = allPeople();
-  people.forEach((p) => rows.push([order.indexOf(p) + 1, p.name, (p.atLeast ? ">=" : "") + p.count, p.firstCount, p.lastCount, L.cfg.design.id ? p.designCount : "",
-    p.latestYear, p.affiliation ? p.affiliation.text : "", p.affiliation ? p.affiliation.pmid : "", p.orcid || "",
-    p.email ? p.email.addresses.join("; ") : "", p.email ? p.email.pmid : "", p.email && p.email.personal ? "yes" : "",
-    [p.initialsOnly ? "initials only" : p.crowded ? "shared surname and initial" : "", p.email && p.email.elsewhere ? "email from a paper that names a different institution" : ""].filter(Boolean).join("; "),
-    p.items.map((it) => it.paper.pmid).join(" ")]));
+  people.forEach((p) => {
+    const note = state.notes && state.notes.get(p.id);
+    rows.push([order.indexOf(p) + 1, p.name, (p.atLeast ? ">=" : "") + p.count, p.firstCount, p.lastCount, p.middleCount, L.cfg.design.id ? p.designCount : "",
+      p.latestYear, p.affiliation ? p.affiliation.text : "", p.affiliation ? p.affiliation.pmid : "", p.orcid || "",
+      ...(withEmail ? [p.email ? p.email.addresses.join("; ") : "", p.email ? p.email.pmid : "", p.email && p.email.personal ? "yes" : ""] : []),
+      [p.initialsOnly ? "initials only" : p.crowded ? "shared surname and initial" : "", withEmail && p.email && p.email.elsewhere ? "email from a paper that names a different institution" : ""].filter(Boolean).join("; "),
+      note ? note.withOthers.map((q) => q.name).join("; ") : "",
+      p.items.map((it) => it.paper.pmid).join(" ")]);
+  });
   return "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
 }
 function download(text, filename) {
@@ -1297,7 +1417,7 @@ $("copyButton").addEventListener("click", async () => {
 });
 $("csvButton").addEventListener("click", () => {
   if (!state.last) return;
-  download(buildCsv(shownPeople()), "reviewer-candidates-" + state.last.cfg.today + ".csv");
+  download(buildCsv(shownPeople(), false), "reviewer-candidates-" + state.last.cfg.today + ".csv");
   $("actionNote").textContent = "List downloaded.";
 });
 $("trayCopy").addEventListener("click", async () => {
@@ -1308,9 +1428,21 @@ $("trayCopy").addEventListener("click", async () => {
 });
 $("trayCsv").addEventListener("click", () => {
   if (!state.last) return;
-  download(buildCsv(pickedPeople()), "reviewer-shortlist-" + state.last.cfg.today + ".csv");
+  download(buildCsv(pickedPeople(), true), "reviewer-shortlist-" + state.last.cfg.today + ".csv");
 });
 window.addEventListener("resize", () => { if (!$("tray").hidden) updateTray(); });
+["designSelect", "positionSelect", "yearsSelect", "excludeBox"].forEach((id) => $(id).addEventListener("change", checkStale));
+$("stopButton").addEventListener("click", () => { if (!state.running) return; state.stopped = true; if (liveCtrl) liveCtrl.abort(); setStatus("Stopping."); });
+$("resetButton").addEventListener("click", () => {
+  if (state.running) return;
+  state.terms = []; $("termInput").value = ""; closeSuggestions(); setTermNote("");
+  $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
+  $("conflictInput").value = "";
+  clearResults(); renderChips(); setStatus("");
+  $("termInput").focus();
+});
+let conflictTimer = null;
+$("conflictInput").addEventListener("input", () => { clearTimeout(conflictTimer); conflictTimer = setTimeout(() => { if (state.last && !state.running) render(); }, 300); });
 $("trayClear").addEventListener("click", () => { state.picked = new Set(); if (state.last) render(); else updateTray(); });
 renderChips();
 // On a computer, put the cursor in the term box so the editor can start typing at once.
