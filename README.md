@@ -16,7 +16,9 @@ Live page: https://amaclullich.github.io/reviewer-finder/
 - Replies, comments and corrections that PubMed has not labelled as such are left out by their titles, and the page says how many.
 - An entry is marked when its papers share no institution, no co-author and no ORCID, because it may combine people with the same name.
 - The conflict check takes the surnames of the manuscript's authors, and says for each one which entries have that surname and which share a paper with it. It is read in the editor's browser and sent nowhere. It is left out of every copy and download.
-- Email addresses appear on the page and in the shortlist download only. The list download leaves them out.
+- Email addresses appear on the page, in Copy shortlist and in the shortlist download. The list download leaves them out.
+- The page keeps nothing after it is closed or left. If the editor leaves the page and comes back with the Back button, it starts again with an empty form. While people are shortlisted, the browser asks before the page is left.
+- If PubMed sends an error, or sends fewer records than asked for, the page asks again. If the gap remains, the page says so on screen. It never shows a shorter list without saying why.
 - The journal badge is stored inside the file, so the page loads nothing from other sites.
 
 ## How to change it

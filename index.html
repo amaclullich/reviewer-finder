@@ -32,6 +32,7 @@
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
+  html, body, form { overflow-anchor: none; }   /* the page decides what stays still (keepBoxStill); the browser does not move it as well */
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 1.0625rem; line-height: 1.55; }
   body.has-tray { padding-bottom: 5.5rem; }
   .wrap { max-width: 56rem; margin: 0 auto; padding: 0 1.5rem; }
@@ -45,7 +46,7 @@
   .tray :focus-visible { outline-color: var(--gold); }
   [hidden] { display: none !important; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .printonly { display: none; }
+  .printonly, .printfull { display: none; }
   #termNote:empty, #conflictNote:empty, #actionNote:empty, #staleNote:empty { margin: 0; padding: 0; }
   #conflictNote, .flag.conflict { user-select: none; }
   #conflictNote { white-space: pre-line; }
@@ -128,6 +129,10 @@
   button.secondary:disabled { color: #9a8fa8; border-color: #c9bfd6; cursor: not-allowed; background: #fff; }
   button.plain { font: inherit; background: none; border: 0; padding: 0; color: var(--purple); text-decoration: underline; text-underline-offset: 0.15em; cursor: pointer; }
   button.plain:disabled { color: #9a8fa8; cursor: not-allowed; }
+  button.plain.small { font-size: 0.95rem; }
+  .added { display: none; }
+  .added:empty { margin: 0; }
+  .suggestions li.message.changed { color: var(--note-ink); background: var(--note-bg); }
   .status { margin-top: 0.5rem; min-height: 1.6rem; color: var(--muted); }
   .bar { height: 0.35rem; background: var(--tint); border-radius: 1rem; overflow: hidden; max-width: 34rem; margin-top: 0.6rem; }
   .bar span { display: block; height: 100%; width: 0; background: var(--purple); transition: width 0.3s ease; }
@@ -197,8 +202,12 @@
     .lede { font-size: 1rem; }
     .steps { grid-template-columns: 1fr; gap: 1.25rem; }
     .row { grid-template-columns: 1fr; }
-    .person { grid-template-columns: 2.7rem 1fr; padding-left: 0.4rem; padding-right: 0.4rem; }
-    .rank { font-size: 1.9rem; }
+    .person { display: block; padding-left: 0.6rem; padding-right: 0.6rem; }
+    .rank { font-size: 1.5rem; margin-bottom: 0.35rem; }
+    .rank::before { content: "No. "; font-size: 1rem; }
+    .chips button { min-width: 2.75rem; min-height: 2.75rem; }
+    .added { display: block; color: var(--navy); }
+    .go button.plain, #againButton { min-height: 2.75rem; }
     .head { flex-direction: column; gap: 0.6rem; }
     .facts { grid-template-columns: 1fr; gap: 0; }
     .facts dd { margin-bottom: 0.5rem; }
@@ -212,6 +221,9 @@
     .mast h1, .journal, .lede { color: #000; }
     .steps, .keepout, form, .actions, .tray, .pick, .more, #actionNote, #privacyNote, #staleNote, .conflict { display: none !important; }
     body.has-tray { padding-bottom: 0 !important; }
+    .facts button { display: none !important; }
+    .facts .cut { display: none; }
+    .facts .printfull { display: inline !important; }
     .printonly { display: block; }
     .person h3 { break-after: avoid; }
   }
@@ -243,17 +255,18 @@
     </section>
     <fieldset>
       <legend>Topics of the manuscript</legend>
-      <p class="rule" id="termRule">Choose from the list. Typing alone adds nothing.</p>
-      <p id="termHow">MeSH headings are PubMed's subject headings. Type one word, then click a heading. <span id="startHint">Delirium is already added. Add one more, such as Hip Fractures.</span></p>
-      <p class="hint" id="termHint">For a tool or drug with no heading, choose the last option in the list.</p>
+      <p class="rule" id="termRule">Pick from the list as you type. Typing alone adds nothing.</p>
+      <p id="termHow">MeSH headings are PubMed's subject headings. Type a word or two, then click a heading. <span id="startHint">Delirium is already added. Add one more, such as Hip Fractures.</span></p>
+      <p class="hint" id="termHint">For a tool or drug with no heading, pick the last option, “Exact words”.</p>
       <ul class="chips" id="chips" aria-label="Entries you have picked"></ul>
-      <p class="hint" id="termNote" role="status"></p>
       <div class="combo">
         <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
-               placeholder="Type one word" role="combobox" aria-expanded="false"
+               placeholder="Type a word or two" role="combobox" aria-expanded="false"
                aria-controls="termList" aria-autocomplete="list" aria-describedby="termRule termHow termHint" aria-label="Search the MeSH headings">
         <ul class="suggestions" id="termList" role="listbox" aria-label="Matching MeSH headings" tabindex="-1" hidden></ul>
       </div>
+      <p class="hint" id="termNote" role="status"></p>
+      <p class="hint added" id="addedNote" aria-hidden="true"></p>
       <p class="sr" id="listStatus" role="status"></p>
     </fieldset>
     </div>
@@ -329,9 +342,10 @@
       <button type="button" class="secondary" id="copyButton">Copy search record</button>
       <button type="button" class="secondary" id="csvButton">Download list as CSV</button>
       <a id="pubmedLink" target="_blank" rel="noopener noreferrer">Open this search in PubMed</a>
+      <button type="button" class="plain" id="againButton">Start a new search</button>
     </div>
     <p class="hint" id="actionNote" role="status"></p>
-    <p class="hint" id="privacyNote" hidden>Names and addresses on this page are personal details from public PubMed records. Use them only to invite reviewers. The list download leaves out email addresses, and the shortlist download includes them. Delete downloaded files when you have finished.</p>
+    <p class="hint" id="privacyNote" hidden>Names and addresses on this page are personal details from public PubMed records. Use them only to invite reviewers. The list download leaves out email addresses. Copy shortlist and the shortlist download include them. Delete downloaded files when you have finished.</p>
     <p class="hint" id="namesNote" hidden>PubMed has no unique number for each author. The page separates people by surname and first name. Two people with the same full name can appear as one entry, so check the affiliation on each paper.</p>
   </section>
 </main>
@@ -340,7 +354,7 @@
   <div class="wrap">
     <p id="trayText" role="status"></p>
     <button type="button" id="trayCopy" aria-label="Copy shortlist">Copy<span class="wide"> shortlist</span></button>
-    <button type="button" id="trayCsv">Download<span class="wide"> shortlist as</span> CSV</button>
+    <button type="button" id="trayCsv">Download shortlist<span class="wide"> as CSV</span></button>
     <button type="button" class="ghost" id="trayClear" aria-label="Clear shortlist">Clear</button>
   </div>
 </div>
@@ -348,7 +362,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 3.5, November 2026.</p>
+  <p>Version 3.7, November 2026.</p>
 </div></div>
 </footer>
 
@@ -406,9 +420,10 @@ const PUBMED = "https://pubmed.ncbi.nlm.nih.gov/";
 const EXCLUDE = '(letter[Publication Type] OR editorial[Publication Type] OR comment[Publication Type] OR news[Publication Type] OR "published erratum"[Publication Type] OR "retracted publication"[Publication Type] OR "retraction notice"[Publication Type] OR "expression of concern"[Publication Type] OR preprint[Publication Type])';
 const PERSONAL_MAIL = /@(gmail\.com|googlemail\.com|yahoo\.[a-z.]+|ymail\.com|hotmail\.[a-z.]+|outlook\.[a-z.]+|live\.[a-z.]+|msn\.com|icloud\.com|me\.com|aol\.com|163\.com|126\.com|qq\.com|sina\.com|sina\.cn|foxmail\.com|protonmail\.com|proton\.me|gmx\.[a-z.]+|mail\.ru|yandex\.[a-z.]+|naver\.com|daum\.net|hanmail\.net)$/i;
 // Replies, comments and corrections that PubMed has not labelled as such. They are left out with the letters and editorials.
-const NOT_A_PAPER = /^(?:(?:the )?authors?['’]?s?['’]? ?(?:response|reply|respond|replies)\b|(?:in )?reply(?:$|[:.,]| to\b| by\b| from\b| letter\b)|response to (?:the )?(?:letter|comment|commentary|editor|correspondence)\b|(?:correction|retraction)(?:$|[:.]| to\b| notice\b)|corrigend(?:um|a)\b|errat(?:um|a)\b|expression of concern\b|letter to the editor\b|editorial[:.]|comments? (?:on|to|about)\b|commentary(?:$|[:.]| on\b| about\b| to\b| response\b)|re:)/i;
+const NOT_A_PAPER = /^(?:(?:the )?authors?['’]?s?['’]? ?(?:response|reply|respond|replies)\b|(?:in )?reply(?:$|[:.,]| to\b| by\b| from\b| letter\b)|response to (?:the )?(?:letter|comment|commentary|editor|correspondence)\b|(?:correction|retraction)(?:$|[:.]| to\b| notice\b| note\b)|corrigend(?:um|a)\b|errat(?:um|a)\b|expression of concern\b|letter to the editor\b|editorial[:.]|comments? (?:on|to|about)\b|commentary(?:$|[:.]| on\b| about\b| to\b| response\b)|re:\s)/i;
+const ENDS_AS_REPLY = { test: (s) => /[:.]\s*(?:the\s+)?(?:authors?['’]?s?['’]?\s+)?(?:reply|response)\.?\s*$/i.test(s) || /\w[-\u2013\u2014]\s*(?:In\s+)?Reply\.?\s*$/.test(s) };
 const REQUEST_GAP_MS = 550;      // NCBI allows three requests a second without a key; this keeps the page at two
-const REQUEST_TIMEOUT_MS = 60000;
+const REQUEST_TIMEOUT_MS = 30000;
 const LOOKUP_TIMEOUT_MS = 6000;
 const SUMMARY_BATCH = 500;
 const RECORD_BATCH = 150;
@@ -432,7 +447,8 @@ function el(tag, attrs, ...children) {
   return node;
 }
 function link(href, text) { return el("a", { href, target: "_blank", rel: "noopener noreferrer", text }); }
-function letters(s) { return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^\p{L}]/gu, ""); }
+const FOLD = { "ø": "o", "æ": "ae", "œ": "oe", "ß": "ss", "đ": "d", "ð": "d", "ł": "l", "þ": "th", "ı": "i" };
+function letters(s) { return (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[øæœßđðłþı]/g, (c) => FOLD[c]).replace(/[^\p{L}]/gu, ""); }
 function cleanTitle(t) {
   return (t || "").replace(/<\/?[a-z][^>]*>/gi, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").trim();
@@ -459,50 +475,63 @@ function parseJson(text) {
   catch (e) { return JSON.parse(text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, " ")); }
 }
 let liveCtrl = null;          // the request in progress, so that Stop can end it
-function retryNote() { if (state.running) setStatus("PubMed is slow to answer. Trying again."); }
+function retryNote(opts) { if (state.running && !(opts && opts.signal)) setStatus("PubMed is slow to answer. The page is still trying."); }
+// A wait between tries that ends at once when the editor presses Stop or the lookup is no longer wanted.
+async function pause(ms, signal) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (signal ? signal.aborted : state.stopped) throw new Error("stopped");
+    await sleep(Math.min(100, end - Date.now()));
+  }
+}
 function eutils(endpoint, params, opts) {
   opts = opts || {};
   const body = new URLSearchParams(params);
   body.set("tool", SETTINGS.toolName);
   if (SETTINGS.contactEmail) body.set("email", SETTINGS.contactEmail);
+  // A heading lookup (opts.signal) is tried twice, with a short time limit, and is dropped when the editor moves on.
+  const tries = opts.signal ? 2 : 3, limit = opts.signal ? LOOKUP_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+  const stopped = () => (opts.signal ? opts.signal.aborted : state.stopped);
   return queue(async () => {
     for (let attempt = 1; ; attempt++) {
-      if (state.stopped) throw new Error("stopped");
+      if (stopped()) throw new Error("stopped");
       let res = null, text = "";
       const ctrl = new AbortController();
-      liveCtrl = ctrl;
-      const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);   // a request that hangs counts as a failure
+      if (opts.signal) opts.signal.addEventListener("abort", () => ctrl.abort(), { once: true }); else liveCtrl = ctrl;
+      const timer = setTimeout(() => ctrl.abort(), limit);   // a request that hangs counts as a failure
+      const slow = setTimeout(() => retryNote(opts), 15000);
       try {
         res = opts.post
           ? await fetch(EUTILS + endpoint, { method: "POST", body, signal: ctrl.signal })
           : await fetch(EUTILS + endpoint + "?" + body.toString(), { signal: ctrl.signal });
         if (res.ok) text = await res.text();
       } catch (e) {
-        clearTimeout(timer);
-        if (state.stopped) throw new Error("stopped");
-        if (attempt >= 3) throw new Error("network");
-        retryNote();
-        await sleep(1500 * attempt);
+        clearTimeout(timer); clearTimeout(slow);
+        if (stopped()) throw new Error("stopped");
+        if (attempt >= tries) throw new Error("network");
+        retryNote(opts);
+        await pause(1500 * attempt, opts.signal);
         continue;
       }
-      clearTimeout(timer);
+      clearTimeout(timer); clearTimeout(slow);
       if (res.ok) {
-        if (opts.xml) {
-          if (/^\s*\{\s*"error"/.test(text) || /<ERROR>/.test(text.slice(0, 2000))) { if (attempt < 3) { retryNote(); await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
-          return text;
-        }
-        const data = parseJson(text);
-        if (data && typeof data.error === "string") { if (attempt < 3) { retryNote(); await sleep(2000 * attempt); continue; } throw new Error("ncbi"); }
-        return data;
+        // An answer that is cut short, is an error page, or lacks what was asked for is tried again, then reported. It is never read as "no papers".
+        let data = null, good = false;
+        if (opts.xml) good = !/^\s*\{\s*"error"/.test(text) && !/<ERROR>/.test(text.slice(0, 2000)) && (!opts.check || opts.check(text));
+        else { try { data = parseJson(text); good = !(data && typeof data.error === "string") && (!opts.check || opts.check(data)); } catch (e) { good = false; } }
+        if (good) return opts.xml ? text : data;
+        if (attempt < tries) { retryNote(opts); await pause(2000 * attempt, opts.signal); continue; }
+        throw new Error("ncbi");
       }
-      if ((res.status === 429 || res.status >= 500) && attempt < 3) { retryNote(); await sleep(2000 * attempt); continue; }
+      if ((res.status === 429 || res.status >= 500) && attempt < tries) { retryNote(opts); await pause(2000 * attempt, opts.signal); continue; }
       throw new Error("http " + res.status);
     }
   });
 }
 async function countFor(query) {
-  const es = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", retmax: "0", term: query }, { post: true });
-  return Number((es && es.esearchresult && es.esearchresult.count) || 0);
+  // A count that comes back with an error is not read as zero.
+  const es = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", retmax: "0", term: query }, { post: true, check: (d) => !!(d && d.esearchresult && d.esearchresult.count !== undefined && !d.esearchresult.ERROR) });
+  return Number(es.esearchresult.count || 0);
 }
 
 /* ------------------------------------------------------------------
@@ -536,42 +565,55 @@ function leftoverNote() {
   if (!v) return false;
   const have = state.terms.find((t) => t.label.toLowerCase() === v.toLowerCase());
   if (have) { $("termInput").value = ""; closeSuggestions(); setTermNote(have.label + " is already added."); return false; }
-  setTermNote("“" + v + "” has not been added. Type one word and choose a heading from the list, or clear the box.", true);
+  setTermNote("“" + v + "” has not been added. Choose a heading from the list, or clear the box.", true);
   return true;
 }
 function closeSuggestions() {
   clearTimeout(meshTimer); clearTimeout(synTimer); look.seq++;
+  if (synAbort) { synAbort.abort(); synAbort = null; }
   suggestions = []; activeIndex = -1; listNote = ""; notePending = false; userMoved = false; inList = false; deferred = false; drawnIds = "";
   $("termList").hidden = true; $("termList").replaceChildren(); $("listStatus").textContent = "";
   $("termInput").setAttribute("aria-expanded", "false");
   $("termInput").removeAttribute("aria-activedescendant");
 }
-let pressed = false, inList = false, deferred = false, drawnSeq = -1, movedAt = 0, drawnIds = "";
+let pressed = false, inList = false, deferred = false, drawnSeq = -1, movedAt = 0, drawnIds = "", changedNote = false;
 function renderSuggestions() {
   if (pressed) return;                                                     // a click is in progress: the list is redrawn when it is over
   const list = $("termList");
   list.replaceChildren();
-  if (listNote) list.append(el("li", { class: "message" + (notePending ? " pending" : ""), role: "presentation", "aria-hidden": "true", text: listNote }));
-  else if (suggestions.some((s) => s.kind === "mesh")) list.append(el("li", { class: "listhead", role: "presentation", text: "Choose a MeSH heading" }));
+  const firstBefore = list.querySelector("li[role=option]"), topBefore = firstBefore ? firstBefore.offsetTop : null, idsBefore = drawnIds;
+  if (changedNote) list.append(el("li", { class: "message changed", role: "presentation", "aria-hidden": "true", text: "The list changed. Choose again." }));
+  else if (listNote) list.append(el("li", { class: "message" + (notePending ? " pending" : ""), role: "presentation", "aria-hidden": "true", text: listNote }));
+  else if (!changedNote && suggestions.some((s) => s.kind === "mesh")) list.append(el("li", { class: "listhead", role: "presentation", text: "Choose a MeSH heading" }));
   suggestions.forEach((s, i) => {
     const li = el("li", { role: "option", id: "opt" + i, class: s.kind === "words" ? "words" : null,
       "aria-selected": i === activeIndex ? "true" : "false", text: s.display });
     if (s.syn) li.append(el("span", { class: "syn", text: " includes “" + s.syn + "”" }));
     // A click that comes just after the options moved may have been aimed at the option that was there before. It is not taken.
-    li.addEventListener("click", () => { if (Date.now() - movedAt < 600) return; addTerm(s); });
+    li.addEventListener("click", () => {
+      if (Date.now() - movedAt < 600) { movedAt = 0; changedNote = true; renderSuggestions(); return; }   // refused once; the next click is taken
+      addTerm(s);
+    });
     list.append(li);
   });
   list.hidden = false;
   const ids = suggestions.map((s) => s.id).join("|");
+  const firstAfter = list.querySelector("li[role=option]");
+  if (ids === idsBefore && topBefore !== null && firstAfter && firstAfter.offsetTop !== topBefore) movedAt = Date.now();   // the same options, but lower or higher
   if (drawnIds && ids !== drawnIds && !drawnIds.split("|").every((id, i) => suggestions[i] && suggestions[i].id === id)) movedAt = Date.now();   // options moved, not only added at the end
   drawnIds = ids;
-  const say = notePending ? "" : listNote;                                 // read out by screen readers, once
+  const say = changedNote ? "The list changed. Choose again." : notePending ? "" : listNote;   // read out by screen readers, once
   if ($("listStatus").textContent !== say) $("listStatus").textContent = say;
   $("termInput").setAttribute("aria-expanded", suggestions.length ? "true" : "false");
   if (activeIndex >= 0) {
     $("termInput").setAttribute("aria-activedescendant", "opt" + activeIndex);
+    // Keep an option chosen with the arrow keys in view inside the list. Only the list scrolls, never the page.
     const active = $("opt" + activeIndex);
-    if (active && active.scrollIntoView) active.scrollIntoView({ block: "nearest" });
+    if (active && userMoved) {
+      const head = list.querySelector(".listhead, .message"), top = active.offsetTop - (head ? head.offsetHeight : 0), bottom = active.offsetTop + active.offsetHeight;
+      if (top < list.scrollTop) list.scrollTop = top;
+      else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+    }
   } else {
     $("termInput").removeAttribute("aria-activedescendant");
   }
@@ -586,8 +628,8 @@ function wordsOption(q) {
   return { kind: "words", label: text, id, display: "Exact words in title or abstract: “" + text + "”" };
 }
 // Source 1: the MeSH lookup service. It answers fast and matches the heading names.
-async function meshFromLookup(q, signal) {
-  const res = await fetch(MESH_LOOKUP + "?label=" + encodeURIComponent(q) + "&match=contains&limit=15", { signal });
+async function meshFromLookup(q, signal, match) {
+  const res = await fetch(MESH_LOOKUP + "?label=" + encodeURIComponent(q) + "&match=" + (match || "contains") + "&limit=15", { signal });
   if (!res.ok) throw new Error("mesh " + res.status);
   const data = await res.json();
   return (Array.isArray(data) ? data : [])
@@ -596,14 +638,15 @@ async function meshFromLookup(q, signal) {
 }
 // Source 2: the MeSH database behind PubMed's search service. It also matches the other names a heading goes by
 // (carers for Caregivers, EEG for Electroencephalography), and it stands in when source 1 does not answer.
-async function meshFromPubmed(q, isStale) {
+let synAbort = null;
+async function meshFromPubmed(q, isStale, signal) {
   const term = cleanWords(q);
   if (!term) return [];
-  const es = await eutils("esearch.fcgi", { db: "mesh", retmode: "json", retmax: "20", term: term + "*" });
+  const es = await eutils("esearch.fcgi", { db: "mesh", retmode: "json", retmax: "20", term: term + "*" }, { signal });
   if (isStale && isStale()) return [];
   const ids = (es && es.esearchresult && es.esearchresult.idlist) || [];
   if (!ids.length) return [];
-  const sm = await eutils("esummary.fcgi", { db: "mesh", retmode: "json", id: ids.join(",") });
+  const sm = await eutils("esummary.fcgi", { db: "mesh", retmode: "json", id: ids.join(",") }, { signal });
   const res = (sm && sm.result) || {};
   const ql = term.toLowerCase();
   return (res.uids || []).map((u) => res[u])
@@ -647,7 +690,12 @@ function refreshSuggestions() {
   const pending = look.labels === null || look.syns === null;
   const next = words && !pending ? mesh.concat([words]) : mesh;           // the exact words option waits until the headings have loaded
   // The pointer is on the list, so an option must not move under it. Later results wait until the pointer leaves, unless they only add to the end.
-  if (inList && drawnSeq === look.seq && suggestions.length && !suggestions.every((s, i) => next[i] && next[i].id === s.id)) { deferred = true; return; }
+  if (inList && drawnSeq === look.seq && suggestions.length && !suggestions.every((s, i) => next[i] && next[i].id === s.id)) {
+    deferred = true;
+    // The exact words option goes at the end, so it can be shown at once without moving anything.
+    if (words && !pending && !suggestions.some((s) => s.kind === "words")) { suggestions = suggestions.concat([words]); renderSuggestions(); }
+    return;
+  }
   const activeId = userMoved && suggestions[activeIndex] ? suggestions[activeIndex].id : null;
   suggestions = next;
   // Enter takes the first heading only when it is a close match. It never takes the exact words option: the editor has to choose that.
@@ -656,12 +704,16 @@ function refreshSuggestions() {
   listNote = ""; notePending = false;
   if (!mesh.length) {
     if (look.labelsFailed && (look.synsFailed || q.length < 3)) listNote = "The term list did not load. Check your connection and type again.";
+    else if (look.labelsFailed && look.synsSlow) { listNote = "The term list is slow to load. Wait a moment, or check your connection."; notePending = true; }
     else if (pending) { listNote = "Looking for matching headings."; notePending = true; }
     else if (!words && state.terms.filter((t) => t.kind === "words").length >= SETTINGS.maxWordEntries) listNote = "No MeSH heading matches these letters. The limit is two exact words entries.";
-    else listNote = "No MeSH heading matches these letters." + (/\s/.test(q.trim()) ? " Try one word." : words ? "" : " Try another word.");
+    else if (look.labelsFailed || look.synsFailed) listNote = "Part of the term list did not load. Type the word again to try again.";
+    else if (look.synsSkipped) { listNote = "More headings will show when the search has finished."; notePending = true; }
+    else if (look.synsSlow) { listNote = "Still looking for matching headings."; notePending = true; }
+    else listNote = "No MeSH heading matches these letters." + (/\s/.test(q.trim()) ? " Try fewer words." : words ? "" : " Try another word.");
   }
-  if (had && !notePending) listNote = had.label + " is already added." + (ql === had.label.toLowerCase() ? "" : " Type the other topic as one word.");
-  drawnSeq = look.seq; deferred = false;
+  if (had && !notePending) listNote = had.label + " is already added." + (ql === had.label.toLowerCase() ? "" : " Type the other topic on its own.");
+  drawnSeq = look.seq; deferred = false; changedNote = false;
   renderSuggestions();
 }
 async function lookupLabels(q, seq) {
@@ -672,50 +724,73 @@ async function lookupLabels(q, seq) {
   const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, LOOKUP_TIMEOUT_MS);
   // The typed spelling and the American spelling are looked up side by side, so the second costs no extra time.
   const us = americanSpelling(q);
-  const got = await Promise.allSettled([q].concat(us ? [us] : []).map((x) => meshFromLookup(x, ctrl.signal)));
+  const asks = [q].concat(us ? [us] : []);
+  // The exact match is asked for beside the others. If it is late, the list is shown without it and it is added when it comes.
+  let exactDone = false;
+  const exact = Promise.all(asks.map((x) => meshFromLookup(x, ctrl.signal, "exact").catch(() => []))).then((r) => { exactDone = true; return [].concat(...r); });
+  const got = await Promise.allSettled(asks.map((x) => meshFromLookup(x, ctrl.signal)));
+  await Promise.race([exact, sleep(400)]);
   clearTimeout(timer);
   if (ctrl.signal.aborted && !timedOut) return;                                             // replaced by newer typing
   if (seq !== look.seq) return;                                                             // newer typing has taken over
   const parts = got.filter((r) => r.status === "fulfilled").map((r) => r.value);
   look.labels = [].concat(...parts); look.labelsFailed = parts.length === 0;
-  if (look.syns === null && !look.labelsFailed) setTimeout(() => { if (seq === look.seq && look.syns === null) { look.syns = []; refreshSuggestions(); } }, Math.max(0, 5000 - (Date.now() - look.at)));
+  if (parts.length) {
+    if (exactDone) look.labels = look.labels.concat(await exact);
+    else exact.then((more) => { if (seq === look.seq && more.length && look.labels && Date.now() - look.at < 3000) { look.labels = look.labels.concat(more); refreshSuggestions(); } });
+  }
+  // The second source gets five seconds from the first letter. If the first source failed as well, the list says that nothing loaded.
+  if (look.syns === null) setTimeout(() => { if (seq === look.seq && look.syns === null) { look.syns = []; look.synsSlow = true; refreshSuggestions(); } }, Math.max(0, 5000 - (Date.now() - look.at)));
   refreshSuggestions();
 }
 async function lookupSynonyms(q, seq) {
   let found = null;
+  if (synAbort) synAbort.abort();
+  const ctrl = new AbortController();
+  synAbort = ctrl;
   try {
-    found = await meshFromPubmed(q, () => seq !== look.seq);
+    found = await meshFromPubmed(q, () => seq !== look.seq, ctrl.signal);
     const us = americanSpelling(q);
-    if (us && us.length >= 3) found = found.concat(await meshFromPubmed(us, () => seq !== look.seq));
+    if (us && us.length >= 3 && seq === look.seq) found = found.concat(await meshFromPubmed(us, () => seq !== look.seq, ctrl.signal));
   } catch (e) { found = null; }
   if (seq !== look.seq) return;
-  look.syns = found || []; look.synsFailed = found === null;
+  look.syns = found || []; look.synsFailed = found === null; look.synsSlow = false;
   refreshSuggestions();
 }
 // Adding or removing an entry changes the lines above the term box. The page scrolls by the same amount, so the box stays under the editor's eyes.
 function keepBoxStill(change) {
   const box = $("termInput"), before = box.getBoundingClientRect().top;
   change();
-  const moved = box.getBoundingClientRect().top - before;
-  if (moved && document.activeElement === box && window.scrollY + moved >= 0) window.scrollBy(0, moved);
+  const moved = Math.max(box.getBoundingClientRect().top - before, -window.scrollY);
+  if (moved && document.activeElement === box) window.scrollBy(0, moved);
 }
+// Focus set by the page itself must not make the phone scroll the box to the top of the screen.
+let scriptFocus = false;
+function focusBox() { scriptFocus = true; $("termInput").focus({ preventScroll: true }); scriptFocus = false; }
+// What was added or removed: shown under the box on a phone, where the entries above it may be off the screen, and read out by screen readers.
+function sayAdded(text) { $("addedNote").textContent = text; $("listStatus").textContent = text; }
 function addTerm(s) {
   if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five entries. Remove one to add another.", true); closeSuggestions(); return; }
   if (!state.terms.some((t) => t.id === s.id)) state.terms.push({ kind: s.kind, label: s.label, id: s.id });
   $("termInput").value = "";
   closeSuggestions();
-  $("termInput").focus({ preventScroll: true });
+  focusBox();
+  const added = "Added " + termName(s) + ". Your entries: " + state.terms.map(termName).join(", ") + ".";
   keepBoxStill(() => { setTermNote(state.terms.length === 3 ? "Three entries find few papers. Two are usually enough." : ""); renderChips(); });
+  sayAdded(added);
 }
 function termName(t) { return t.kind === "words" ? "the words “" + t.label + "”" : t.label; }
 function renderChips() {
   const chips = $("chips");
+  $("addedNote").textContent = "";
   chips.replaceChildren();
   state.terms.forEach((t) => {
     const remove = el("button", { type: "button", "aria-label": "Remove " + termName(t), text: "×" });
     remove.addEventListener("click", () => {
       state.terms = state.terms.filter((x) => x.id !== t.id);
-      $("termInput").focus({ preventScroll: true }); keepBoxStill(() => { renderChips(); setTermNote(""); });
+      focusBox(); keepBoxStill(() => { renderChips(); setTermNote(""); });
+      sayAdded(state.terms.length ? "Removed " + termName(t) + ". Your entries: " + state.terms.map(termName).join(", ") + "." : "Removed " + termName(t) + ". Type a word and choose a heading.");
+      if (!$("termList").hidden && $("termInput").value.trim().length >= 2) refreshSuggestions();
     });
     chips.append(t.kind === "words"
       ? el("li", { class: "words" }, el("span", { text: "“" + t.label + "”" }), el("span", { class: "kind", text: "exact words" }), remove)
@@ -729,17 +804,17 @@ function renderChips() {
 }
 $("termInput").addEventListener("input", () => {
   clearTimeout(meshTimer); clearTimeout(synTimer);
-  setTermNote("");
+  setTermNote(""); $("addedNote").textContent = "";
   const q = $("termInput").value.trim();
   if (q.length < 2) { closeSuggestions(); return; }
   const seq = ++look.seq;
-  look.q = q; look.us = americanSpelling(q); look.labels = null; look.syns = q.length < 3 ? [] : null; look.labelsFailed = false; look.synsFailed = false; userMoved = false;
+  look.q = q; look.us = americanSpelling(q); look.labels = null; look.syns = q.length < 3 ? [] : null; look.labelsFailed = false; look.synsFailed = false; look.synsSlow = false; look.synsSkipped = false; userMoved = false;
   inList = false; deferred = false;                                         // typing again: the pointer is no longer choosing
   look.at = Date.now();
   if (activeIndex >= 0) { activeIndex = -1; if (!$("termList").hidden) renderSuggestions(); }   // Enter must not take a heading from the list for the earlier letters
-  drawnIds = "";                                                            // the list for new letters is a new list, not a list that moved
   meshTimer = setTimeout(() => lookupLabels(q, seq), 250);
-  if (q.length >= 3) synTimer = setTimeout(() => lookupSynonyms(q, seq), 600);
+  if (q.length >= 3 && !state.running) synTimer = setTimeout(() => lookupSynonyms(q, seq), 600);
+  else if (q.length >= 3) { look.syns = []; look.synsSkipped = true; }       // while a search runs, the first source alone is used
   // If the second source is slow but the first has answered, stop waiting for it after five seconds.
   setTimeout(() => { if (seq === look.seq && look.syns === null && look.labels !== null && !look.labelsFailed) { look.syns = []; refreshSuggestions(); } }, 5000);
 });
@@ -816,7 +891,7 @@ function buildQuery(cfg, terms, fromDate) {
 function parseName(name) {
   const tokens = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (!tokens.length) return null;
-  if (tokens.length >= 3 && /^(Jr|Sr|Junior|Senior|2nd|3rd|4th|II|III|IV|MD|PhD)\.?$/.test(tokens[tokens.length - 1]) && /^\p{Lu}{1,4}$/u.test(tokens[tokens.length - 2].normalize("NFC"))) tokens.pop();
+  if (tokens.length >= 3 && /^(Jr|Sr|Junior|Senior|2nd|3rd|4th|II|III|IV|V|MD|PhD)\.?$/i.test(tokens[tokens.length - 1]) && /^\p{Lu}{1,4}$/u.test(tokens[tokens.length - 2].normalize("NFC"))) tokens.pop();
   let initials = "";
   if (tokens.length >= 2 && /^\p{Lu}{1,8}$/u.test(tokens[tokens.length - 1].normalize("NFC"))) initials = tokens.pop();   // initials can be letters such as Ø or Š
   const surnameNorm = letters(tokens.join(" "));
@@ -856,6 +931,7 @@ function tally(papers, position, designIds, minOwn) {
    people who share a surname and first initial
    ------------------------------------------------------------------ */
 const records = new Map();   // pmid -> { authors: [...] }
+const missing = { summaries: 0, records: 0 };   // what PubMed did not send in this search
 const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
 
 function parseRecords(xmlText) {
@@ -895,20 +971,36 @@ async function fetchRecords(pmids, onProgress) {
   const need = pmids.filter((id) => !records.has(id));
   for (let i = 0; i < need.length; i += RECORD_BATCH) {
     if (onProgress) onProgress(Math.min(i + RECORD_BATCH, need.length), need.length);
-    const xml = await eutils("efetch.fcgi", { db: "pubmed", retmode: "xml", id: need.slice(i, i + RECORD_BATCH).join(",") }, { post: true, xml: true });
+    const batch = need.slice(i, i + RECORD_BATCH);
+    const whole = (x) => /<PubmedArticleSet[\s>]/.test(x) && /<\/PubmedArticleSet>\s*$/.test(x);
+    const count = (x) => (x.match(/<(PubmedArticle|PubmedBookArticle)>/g) || []).length;
+    // A set that is complete is used at once. One that lacks records is asked for again, then used as it is, and the gap is reported.
+    let xml = "";
+    for (let tries = 0; tries < 3; tries++) {
+      xml = await eutils("efetch.fcgi", { db: "pubmed", retmode: "xml", id: batch.join(",") }, { post: true, xml: true, check: whole });
+      if (count(xml) >= batch.length) break;
+      await pause(1500);
+    }
     parseRecords(xml);
+    missing.records += batch.filter((id) => !records.has(id)).length;
   }
 }
 function nodeMatches(a, g) {
   return letters(a.last) === g.surnameNorm && (letters(a.initials || a.fore || "")[0] || "") === g.firstInitial;
 }
+// A hyphenated first name is one name: "Hong-Bo" is not "Hong", and "J-H" (Ji-Hoon) is not "Jie". Jean-Francois is one name too.
+// Dots separate initials ("A.M.J." is three). An apostrophe joins (D'Arcy).
 function foreTokens(fore) {
-  return String(fore || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-    .replace(/[.'’-]/g, "").split(/\s+/).map((t) => t.replace(/[^\p{L}]/gu, "")).filter(Boolean);
+  return String(fore || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[øæœßđðłþı]/g, (c) => FOLD[c])
+    .replace(/['’]/g, "").replace(/\.(?=\s*[-‐])/g, "").replace(/\./g, " ").replace(/[-‐]/g, "").split(/\s+/).map((t) => t.replace(/[^\p{L}]/gu, "")).filter(Boolean);
 }
 function namesCompatible(a, b) {
   if (!a.length || !b.length) return true;
   if (a.join("") === b.join("")) return true;
+  // "Jeanfrancois" (from Jean-Francois) and "Jean F": the second part of the one name matches the initial.
+  const joined = (x, y) => x[0].length > 1 && y.length >= 2 && y[0].length > 1 && y[1].length === 1 && x[0].length > y[0].length && x[0].startsWith(y[0]) && x[0][y[0].length] === y[1];
+  if (joined(a, b)) return namesCompatible(a.slice(1), b.slice(2));
+  if (joined(b, a)) return namesCompatible(b.slice(1), a.slice(2));
   const fa = a[0], fb = b[0];
   if (fa.length === 1 || fb.length === 1) { if (fa[0] !== fb[0]) return false; }
   else if (fa !== fb) return false;
@@ -916,6 +1008,14 @@ function namesCompatible(a, b) {
   // A later name must be the same, or one of the two must be its initial: "Sung Ho" and "Sung Hoon" are two people.
   for (let i = 1; i < n; i++) if (!(a[i] === b[i] || ((a[i].length === 1 || b[i].length === 1) && a[i][0] === b[i][0]))) return false;
   return true;
+}
+// When a paper could belong to several people with this name, it goes to the one at the same institution, if only one is.
+function atSamePlace(pool, it) {
+  if (pool.length < 2) return null;
+  const w = instWords(it.node.affs);
+  if (!w.size) return null;
+  const at = pool.filter((c) => [...c.words].some((x) => w.has(x)));
+  return at.length === 1 ? at[0] : null;
 }
 function clusterGroup(g) {
   const items = [];
@@ -934,7 +1034,9 @@ function clusterGroup(g) {
   }
   const resolved = items.filter((i) => i.node).map((i) => Object.assign(i, { tokens: foreTokens(i.node.fore) }));
   const isFull = (i) => i.tokens.some((t) => t.length > 1);
-  const full = resolved.filter(isFull).sort((a, b) => b.tokens.join("").length - a.tokens.join("").length);
+  // Papers with an ORCID are placed first, so two people with the same name and different ORCIDs each start their own entry
+  // before any paper without an ORCID is placed.
+  const full = resolved.filter(isFull).sort((a, b) => (b.node.orcid ? 1 : 0) - (a.node.orcid ? 1 : 0) || b.tokens.join("").length - a.tokens.join("").length);
   const brief = resolved.filter((i) => !isFull(i));
   const clusters = [];
   const fits = (c, it) => {
@@ -945,6 +1047,7 @@ function clusterGroup(g) {
   };
   const put = (c, it) => {
     c.items.push(it);
+    instWords(it.node.affs).forEach((w) => c.words.add(w));
     if (it.node.orcid && !c.orcid) c.orcid = it.node.orcid;
     if (it.tokens.join("").length > c.tokens.join("").length) c.tokens = it.tokens;
     const b = letters(it.node.initials);
@@ -957,14 +1060,17 @@ function clusterGroup(g) {
       const same = homes.filter((c) => c.tokens.join("") === it.tokens.join(""));
       // Two people with the same name and different ORCIDs: a paper with no ORCID joins neither.
       home = same.length === 1 ? same[0] : same.find((c) => !c.orcid) || (!same.length && homes.length === 1 ? homes[0] : null);
+      if (!home) home = atSamePlace(same.length ? same : homes, it);
     }
-    if (!home) { home = { tokens: it.tokens, orcid: "", inits: "", items: [], initialsOnly: false }; clusters.push(home); }
+    if (!home) { home = { tokens: it.tokens, orcid: "", inits: "", items: [], words: new Set(), initialsOnly: false }; clusters.push(home); }
     put(home, it);
   }
   for (const it of brief) {
-    const homes = clusters.filter((c) => fits(c, it));
-    if (homes.length === 1) put(homes[0], it);
-    else if (homes.length === 0) { const c = { tokens: it.tokens, orcid: "", inits: "", items: [], initialsOnly: true }; clusters.push(c); put(c, it); }
+    const own = it.node.orcid ? clusters.filter((c) => c.orcid === it.node.orcid) : [];
+    const homes = own.length ? own : clusters.filter((c) => fits(c, it));
+    const at = homes.length > 1 ? atSamePlace(homes, it) : null;
+    if (homes.length === 1 || at) put(at || homes[0], it);
+    else if (homes.length === 0) { const c = { tokens: it.tokens, orcid: "", inits: "", items: [], words: new Set(), initialsOnly: true }; clusters.push(c); put(c, it); }
     // more than one possible home: the paper is left out, because the record does not say whose it is
   }
   // Papers past the reading limit for one name are left out, and the count then says "possibly more".
@@ -992,15 +1098,22 @@ function affWords(affs) {
   }
   return words;
 }
-// Telephone and fax numbers are left out, and a very long affiliation (a whole study group, or a short biography) is cut at a comma.
+// Telephone and fax numbers are left out of the affiliation.
 function trimAffiliation(a) {
   let s = a.replace(/[,;.]?\s*\(?(?:tel|telephone|phone|fax|ph)\b\.?\)?\s*(?:no\.?|number)?\s*[:.]?\s*\+?[\d\s()./-]{7,}\d/gi, "")
            .replace(/,\s*\+?\(?\d[\d\s()./-]{6,}\d\s*$/, (m) => ((m.match(/\d/g) || []).length >= 8 ? "" : m)).trim();
-  if (s.length > 260) {
-    const cut = s.lastIndexOf(",", 240);
-    s = s.slice(0, cut > 120 ? cut : 240).replace(/[\s,;.]+$/, "") + " (shortened)";
-  }
-  return s;
+  return s.replace(/\s*,\s*,/g, ",");
+}
+// The words that name the institution itself: those in the parts of an affiliation that name a hospital, university, institute
+// and the like. A city or country on its own part does not count, so two hospitals in Beijing are not one institution.
+const INSTITUTION = /hospital|universit|college|institut|istituto|centre|center|centro|centrum|school|clinic|klinik|clinique|academ|foundation|trust|ziekenhuis|sjukhus|h[oô]pital|ospedale|policlinic|health system|laborator/i;
+function instWords(affs) {
+  const parts = [];
+  for (const a of affs) a.replace(EMAIL_RE, " ").split(/[,;]/).forEach((p) => { if (INSTITUTION.test(p)) parts.push(p); });
+  if (!parts.length) return affWords(affs);
+  const words = new Set();
+  for (const w of parts.join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^\p{L}]+/u)) if (w.length >= 3 && !AFF_COMMON.has(w)) words.add(w);
+  return words;
 }
 function buildPerson(c, atLeast, crowded) {
   const seen = new Set(), seenTitle = new Set();
@@ -1046,34 +1159,42 @@ function buildPerson(c, atLeast, crowded) {
   }
   // Papers under one full name that share no ORCID, no institution and no co-author may belong to different people.
   // The papers are put into groups joined by any of the three, and the entry is marked when more than one group is left.
-  const placed = c.initialsOnly ? [] : withNode.map((i) => ({ i, words: affWords(i.node.affs) })).filter((x) => x.words.size);
+  // Papers with no usable affiliation take part through co-authors and ORCID only; a group of such papers alone is not counted.
+  const nodes = c.initialsOnly ? [] : withNode.map((i) => ({ i, words: affWords(i.node.affs) }));
+  const placed = nodes.filter((x) => x.words.size);
   let sets = [];
   if (placed.length > 1) {
-    for (const x of placed) {
+    for (const x of nodes) {
       x.co = new Set();
       const rec = records.get(x.i.paper.pmid);
       if (rec) for (const a of rec.authors) if (a !== x.i.node) { const fore = foreTokens(a.fore); x.co.add(letters(a.last) + "|" + (fore.some((f) => f.length > 1) ? fore.join("") : letters(a.initials))); }
     }
     const share = (a, b) => { for (const v of a) if (b.has(v)) return true; return false; };
-    const root = placed.map((x, n) => n);
+    const root = nodes.map((x, n) => n);
     const find = (n) => (root[n] === n ? n : (root[n] = find(root[n])));
-    for (let a = 0; a < placed.length; a++) for (let b = a + 1; b < placed.length; b++) {
-      const A = placed[a], B = placed[b];
+    for (let a = 0; a < nodes.length; a++) for (let b = a + 1; b < nodes.length; b++) {
+      const A = nodes[a], B = nodes[b];
       if ((A.i.node.orcid && A.i.node.orcid === B.i.node.orcid) || share(A.words, B.words) || share(A.co, B.co)) root[find(a)] = find(b);
     }
-    const size = new Map();
-    placed.forEach((x, n) => size.set(find(n), (size.get(find(n)) || 0) + 1));
-    sets = [...size.values()].sort((a, b) => b - a);
+    const size = new Map(), hasPlace = new Set();
+    nodes.forEach((x, n) => { size.set(find(n), (size.get(find(n)) || 0) + 1); if (x.words.size) hasPlace.add(find(n)); });
+    sets = [...size].filter(([r]) => hasPlace.has(r)).map(([, n]) => n).sort((a, b) => b - a);
   }
-  const mixed = sets.length < 2 ? "" : placed.length === 2 ? (items.length === 2 ? "These two papers share" : "Two of these papers share") + " no institution and no co-author, so this entry may combine two people with the same name."
+  const mixed = sets.length < 2 ? "" : (sets[0] + sets[1] === 2 && sets.length === 2 ? (items.length === 2 ? "These two papers share" : "Two of these papers share") + " no institution and no co-author, so this entry may combine two people with the same name."
     : sets.length === 2 && sets[1] === 1 ? "One of these papers shares no institution and no co-author with the others, so this entry may combine two people with the same name."
     : sets.length === 2 ? "These papers fall into two groups that share no institution and no co-author, so this entry may combine two people with the same name."
-    : "These papers fall into " + sets.length + " groups that share no institution and no co-author, so this entry may combine several people with the same name.";
-  const orcidFrom = c.orcid ? withNode.find((i) => i.node.orcid === c.orcid) : null;
+    : "These papers fall into " + sets.length + " groups that share no institution and no co-author, so this entry may combine several people with the same name.")
+    + (sets.length < 2 ? "" : (() => {
+      const shown = [affiliation ? "affiliation" : "", c.orcid ? "ORCID" : "", email ? "email" : ""].filter(Boolean);
+      if (!shown.length) return "";
+      const list = shown.length > 1 ? shown.slice(0, -1).join(", ") + " and " + shown[shown.length - 1] : shown[0];
+      return " The " + list + " shown may belong to " + (shown.length > 1 ? "different people with this name." : "another person with this name.");
+    })());
+  const orcidFrom = c.orcid ? withNode.find((i) => i.node.orcid === c.orcid) || c.items.find((i) => i.node && i.node.orcid === c.orcid) : null;
   return { id: 0, name, authorTerm, items, count: items.length, mixed, groups: sets.length, orcidPmid: orcidFrom ? orcidFrom.paper.pmid : "",
            firstCount: items.filter((i) => i.pos === "first").length, lastCount: items.filter((i) => i.pos === "last").length,
            middleCount: items.filter((i) => i.pos === "middle").length,
-           surnameNorm: latest ? letters(latest.node.last) : "", surnameForms: latest ? surnameForms(latest.node.last) : new Set(), tokens: c.tokens, ownNodes: new Set(withNode.map((i) => i.node)),
+           surnameNorm: latest ? letters(latest.node.last) : "", surnameForms: latest ? surnameForms(latest.node.last) : new Set(), tokens: c.tokens.length ? c.tokens : c.inits.split(""), ownNodes: new Set(withNode.map((i) => i.node)),
            latestYear: items.length ? items[0].paper.year : "", orcid: c.orcid, affiliation, email,
            initialsOnly: c.initialsOnly, crowded: crowded && !c.initialsOnly, atLeast, designCount: 0 };
 }
@@ -1124,11 +1245,13 @@ function makeResolver(groups, designIds, minOwn) {
    Running a search
    ------------------------------------------------------------------ */
 function setStatus(text) { $("status").textContent = text || ""; }
+let progressTimer = null;
 function setProgress(fraction) {
   if (fraction === null) { $("bar").hidden = true; $("barFill").style.width = "0"; return; }
   $("bar").hidden = false;
   $("barFill").style.width = Math.max(3, Math.min(100, Math.round(fraction * 100))) + "%";
 }
+function showProgress() { const s = $("status"); if (!busyTyping() && s.getBoundingClientRect().bottom > window.innerHeight) s.scrollIntoView({ block: "nearest" }); }
 function setRunning(on) {
   const act = document.activeElement;
   const byKeyboard = on && act && act.tagName === "BUTTON" && act.matches(":focus-visible");
@@ -1194,9 +1317,9 @@ async function showTooFew(count, cfg) {
   $("printLine").textContent = printLineFor(cfg);
   $("summary").append(stopBox(
     count === 0 ? "PubMed has no papers that match." : "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
-    "The page needs at least " + SETTINGS.minPapers + ". With fewer, the list is too narrow to choose from and the entries may point to one study.",
+    "The page needs at least " + SETTINGS.minPapers + "." + (count > 0 ? " With fewer, the list is too narrow to choose from, and the papers may all come from one study." : ""),
     cfg.terms.length > 1 ? "A paper must match every entry, so fewer entries find more papers." : null,
-    count > 0 ? "You can still open these papers in PubMed with the link below and choose from them yourself." : null));
+    count === 1 ? "You can still open this paper in PubMed with the link below." : count > 1 ? "You can still open these papers in PubMed with the link below and choose from them yourself." : null));
   $("results").hidden = false;
   setStatus("Checking which change would help.");
   let fixes = null;
@@ -1217,7 +1340,7 @@ function mayClearShortlist(what) {
   const n = state.last ? pickedPeople().length : 0;
   return !n || window.confirm(what + " clears your shortlist of " + n + (n === 1 ? " person" : " people") + ". Continue?");
 }
-function busyTyping() { return /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName) && state.typedAt > state.startedAt; }
+function busyTyping() { const a = document.activeElement; return !!a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName) && state.typedAt > state.startedAt; }
 function toResults(stay) {
   if (busyTyping()) return;                                                 // the editor has typed since the search began: leave the cursor there
   $("resultsHead").focus({ preventScroll: true });
@@ -1226,6 +1349,7 @@ function toResults(stay) {
 async function run(asked) {
   if (state.running) return;
   const dropped = state.dropNote; state.dropNote = "";                      // the note belongs to this attempt only
+  if (synAbort) { synAbort.abort(); synAbort = null; }                     // a heading lookup still running must not hold up the search
   if (leftoverNote()) { $("termInput").focus(); return; }
   if (!state.terms.length) { setTermNote("Choose at least one MeSH heading from the list first.", true); $("termInput").focus(); return; }
   if (!asked && !mayClearShortlist("A new search")) return;
@@ -1233,12 +1357,13 @@ async function run(asked) {
   try {
     const cfg = readForm(), sig = formSignature();
     const query = buildQuery(cfg);
-    setStatus("Searching PubMed."); setProgress(0.04);
-    const es = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", usehistory: "y", retmax: "0", sort: "pub_date", term: query }, { post: true });
+    setStatus("Searching PubMed."); setProgress(0.04); showProgress();
+    const es = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", usehistory: "y", retmax: "0", sort: "pub_date", term: query }, { post: true, check: (d) => !!(d && d.esearchresult && d.esearchresult.count !== undefined) });
     const r = (es && es.esearchresult) || {};
     if (r.ERROR) throw new Error("search");
     const count = Number(r.count || 0);
     const pubmedUrl = PUBMED + "?term=" + encodeURIComponent(query) + "&sort=date";
+    missing.summaries = 0; missing.records = 0;
 
     if (count < SETTINGS.minPapers) {
       await showTooFew(count, cfg);
@@ -1250,8 +1375,9 @@ async function run(asked) {
     let designIds = null, designCount = 0;
     if (cfg.design.id) {
       setStatus("Checking study designs."); setProgress(0.08);
-      const ds = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", retmax: "10000", sort: "pub_date", term: "(" + query + ") AND " + cfg.design.query }, { post: true });
+      const ds = await eutils("esearch.fcgi", { db: "pubmed", retmode: "json", retmax: "10000", sort: "pub_date", term: "(" + query + ") AND " + cfg.design.query }, { post: true, check: (d) => !!(d && d.esearchresult && d.esearchresult.count !== undefined) });
       const dr = (ds && ds.esearchresult) || {};
+      if (dr.ERROR) throw new Error("search");
       designIds = new Set(dr.idlist || []); designCount = Number(dr.count || 0);
     }
 
@@ -1261,9 +1387,18 @@ async function run(asked) {
     for (let start = 0; start < toRead; start += SUMMARY_BATCH) {
       const done = Math.min(start + SUMMARY_BATCH, toRead);
       setStatus("Reading papers: " + fmt(done) + " of " + fmt(toRead) + "."); setProgress(0.1 + 0.5 * (start / toRead));
-      const sm = await eutils("esummary.fcgi", { db: "pubmed", retmode: "json", version: "2.0", query_key: r.querykey, WebEnv: r.webenv,
-        retstart: String(start), retmax: String(Math.min(SUMMARY_BATCH, toRead - start)) });
+      const want = Math.min(SUMMARY_BATCH, toRead - start);
+      const full = (d) => !!(d && d.result && Array.isArray(d.result.uids) && d.result.uids.length);
+      let sm = null;
+      for (let tries = 0; tries < 3; tries++) {
+        sm = await eutils("esummary.fcgi", { db: "pubmed", retmode: "json", version: "2.0", query_key: r.querykey, WebEnv: r.webenv,
+          retstart: String(start), retmax: String(want) }, { check: full });
+        const got = sm.result.uids.filter((u) => sm.result[u] && !sm.result[u].error).length;
+        if (got >= want) break;
+        await pause(1500);
+      }
       const res = (sm && sm.result) || {};
+      missing.summaries += Math.max(0, want - (res.uids || []).filter((u) => res[u] && !res[u].error).length);
       for (const uid of res.uids || []) {
         const x = res[uid];
         if (!x || x.error || !Array.isArray(x.authors) || !/^\d+$/.test(String(uid))) continue;
@@ -1271,7 +1406,7 @@ async function run(asked) {
         if (!persons.length) continue;
         const sort = x.sortpubdate || "";
         const title = cleanTitle(x.title || x.booktitle || "");
-        if (cfg.exclude && NOT_A_PAPER.test(title.replace(/^[\s\[("“]+/, ""))) { leftOut++; continue; }
+        if (cfg.exclude && (NOT_A_PAPER.test(title.replace(/^[\s\[("“]+/, "")) || ENDS_AS_REPLY.test(title))) { leftOut++; continue; }
         papers.push({ pmid: String(uid), title, source: x.source || "", sort, year: sort.slice(0, 4) || String(x.pubdate || "").slice(0, 4),
                       first: persons[0], last: persons[persons.length - 1], solo: persons.length === 1, all: persons });
       }
@@ -1307,8 +1442,10 @@ async function run(asked) {
     $("results").hidden = false; setStatus(""); box.focus();
   } finally {
     setRunning(false);
-    setTimeout(() => setProgress(null), 400);
+    clearTimeout(progressTimer); progressTimer = setTimeout(() => { if (!state.running) setProgress(null); }, 400);
     if (document.activeElement === document.body || document.activeElement === $("stopButton")) $("runButton").focus();   // after Stop, the keyboard stays on the form
+    // A word typed during the search was looked up in one source only. Look it up again in both now.
+    if (look.synsSkipped && document.activeElement === $("termInput") && $("termInput").value.trim().length >= 3) $("termInput").dispatchEvent(new Event("input"));
   }
 }
 async function showMore() {
@@ -1321,7 +1458,7 @@ async function showMore() {
     $("actionNote").textContent = "Checking more names.";
     const before = $("people").children.length;
     for (let tries = 0; tries < 6; tries++) {                              // a round can read names that all fall short, so read on until someone is added
-      await L.resolver.ensure(state.shown);
+      await L.resolver.ensure(state.shown, (done, total) => { $("actionNote").textContent = "Checking more names: " + fmt(done) + " of " + fmt(total) + " records."; });
       if (allPeople().length > before || !L.resolver.hasMore(before)) break;
     }
     render();
@@ -1332,6 +1469,7 @@ async function showMore() {
     else toResults(true);
   } catch (e) {
     state.shown -= SETTINGS.listSize;
+    render();                                                               // names read before the stop may change the order: show the list as it now stands
     $("actionNote").textContent = e && e.message === "stopped" ? "Stopped." : "PubMed did not answer. Wait a minute and press the button again.";
     back = true;
   } finally {
@@ -1348,6 +1486,17 @@ function shownPeople() { return allPeople().slice(0, state.shown); }
 function pickedPeople() { return allPeople().filter((p) => state.picked.has(p.id)); }
 function positionWords(cfg) { return cfg.position === "first" ? "first author" : cfg.position === "last" ? "last author" : cfg.position === "any" ? "listed as an author" : "first or last author"; }
 
+// The changes that would find more people, given the search as it was made.
+function widerAdvice(cfg) {
+  const ways = [];
+  if (cfg.terms.length > 1) ways.push("remove an entry");
+  if (cfg.years < 10) ways.push("choose a longer period");
+  if (cfg.position === "first" || cfg.position === "last") ways.push("choose “First or last author”");
+  else if (cfg.position === "either") ways.push("choose “Any author”");
+  if (!ways.length) ways.push("choose broader headings");
+  const s = ways.length > 1 ? ways.slice(0, -1).join(", ") + " or " + ways[ways.length - 1] : ways[0];
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 function render() {
   const L = state.last;
   const shown = shownPeople();
@@ -1355,22 +1504,28 @@ function render() {
   summary.replaceChildren();
   let first = "PubMed has " + fmt(L.count) + " papers that match.";
   if (L.count > L.toRead) first += " The page read the most recent " + fmt(L.toRead) + ".";
-  if (L.leftOut) first += " It left out " + L.leftOut + (L.leftOut === 1 ? " that is a reply, a comment or a correction, going by its title." : " that are replies, comments or corrections, going by their titles.");
+  if (missing.summaries || missing.records) summary.append(el("p", { class: "flag", text: "PubMed did not send " + (missing.summaries ? fmt(missing.summaries) + " of the paper summaries" : "") + (missing.summaries && missing.records ? " and " : "") + (missing.records ? fmt(missing.records) + " of the full records" : "") + ", so some counts may be low. Search again to complete them." }));
+  if (L.leftOut) first += " The page left out " + L.leftOut + (L.leftOut === 1 ? " paper that is a reply, a comment or a correction, judged by its title." : " papers that are replies, comments or corrections, judged by their titles.");
   summary.append(el("p", { text: first }));
   if (L.count > 20000) summary.append(el("p", { class: "flag", text: "These entries are very broad, so the list reflects only the newest papers. Add an entry to narrow the field." }));
-  if (L.cfg.design.id) summary.append(el("p", { text: fmt(L.designCount) + " of them fit the design you chose: " + L.cfg.design.label.toLowerCase() + ". People with papers of that design come first." }));
+  if (L.cfg.design.id) summary.append(el("p", { text: fmt(L.designCount) + " of the " + fmt(L.count) + " matching papers fit the design you chose: " + L.cfg.design.label.charAt(0).toLowerCase() + L.cfg.design.label.slice(1) + ". People with papers of that design come first." }));
 
   const total = L.resolver.people.length + (L.resolver.groups.length - L.resolver.cursor);
   const exact = L.resolver.cursor >= L.resolver.groups.length;
   const few = L.minOwn === 1;
-  const onWhat = few ? " on at least one of them" : " on at least two of them";
+  const onWhat = few ? " on at least one of the matching papers" : " on at least two of the matching papers";
   if (few) summary.append(el("p", { class: "flag", text: "Only " + fmt(L.count) + " papers match, so the choice is narrow. The list includes people with one matching paper. Several entries may come from the same study." }));
+  const holds = (x, s) => x.label.toLowerCase().split(/[^\p{L}\p{N}]+/u).join(" ").includes(s.label.toLowerCase());   // Emergence Delirium, the words "delirium" or "delirium-like"
+  const lost = SETTINGS.startTerms.filter((s) => s.kind === "mesh" && !L.cfg.terms.some((x) => x.id === s.id || holds(x, s)));
+  if (lost.length && L.cfg.terms.every((x) => !x.label.toLowerCase().includes(lost[0].label.toLowerCase())) && !(L.dropped && lost.some((s) => L.dropped === termName(s)))) summary.append(el("p", { class: "flag", text: lost.map((s) => s.label).join(" and ") + " is not one of the entries, so the list may include people who do not work on " + lost.map((s) => s.label.toLowerCase()).join(" or ") + "." }));
   if (L.dropped) summary.append(el("p", { class: "flag", text: "You removed " + L.dropped + " to get enough papers. People on this list may have no paper on it." }));
   if (L.resolver.unsettled) summary.append(el("p", { class: "flag", text: "Many people have the same number of papers here, and the page stopped reading before the order was settled. Someone with as many papers as the last people shown may be missing. Add an entry to narrow the search." }));
-  if (!shown.length) {
-    summary.append(stopBox("Nobody is " + positionWords(L.cfg) + (few ? " on these papers." : " on two or more of these papers."), "Remove an entry, widen the period or change the author position."));
+  if (!shown.length && (missing.summaries || missing.records)) {
+    summary.append(stopBox("PubMed did not send the records this list needs.", "Wait a minute and search again."));
+  } else if (!shown.length) {
+    summary.append(stopBox("Nobody is " + positionWords(L.cfg) + (few ? " on these papers." : " on two or more of these papers."), widerAdvice(L.cfg) + "."));
   } else if (exact && total < SETTINGS.listSize) {
-    summary.append(el("p", { text: "Only " + total + (total === 1 ? " person is " : " people are ") + positionWords(L.cfg) + onWhat + ", so the list is shorter than " + SETTINGS.listSize + ". Remove an entry or widen the period to see more." }));
+    summary.append(el("p", { text: "Only " + total + (total === 1 ? " person is " : " people are ") + positionWords(L.cfg) + onWhat + ", so the list is shorter than " + SETTINGS.listSize + ". To see more, " + widerAdvice(L.cfg).charAt(0).toLowerCase() + widerAdvice(L.cfg).slice(1) + "." }));
   } else {
     summary.append(el("p", { text: (exact ? "" : "About ") + fmt(total) + " people are " + positionWords(L.cfg) + onWhat + ". The list shows " + (exact && shown.length === total ? "all " : "the top ") + shown.length + "." }));
   }
@@ -1401,9 +1556,9 @@ function render() {
     if (self.length) s += listOf(self) + (self.length === 1 ? " has" : " have") + " this surname.";
     if (both.length) s += " " + upper(listOf(both)) + " also" + (both.length === 1 ? " shares" : " share") + " a listed paper with another author of this surname.";
     if (others.length) s += (self.length ? " " + upper(listOf(others)) : listOf(others)) + (others.length === 1 ? " shares" : " share") + " a listed paper with an author of this surname.";
-    if (n.open && n.inits.size >= 2 && new Set(self.concat(co)).size >= 3) s += " This surname covers several people here. Add the author's initial after it to narrow the check.";
+    if (n.open && n.inits.size >= 2 && new Set(self.concat(co)).size >= 3) s += " This surname covers several people here. To narrow the check, type the surname and an initial, as in Feng Y.";
     return s;
-  }).join("\n") + "\nThe check covers the papers listed here, so check other links yourself.";
+  }).join("\n") + "\nThe check uses only the papers listed here. Check other connections yourself, such as other joint work or the same institution.";
   if ($("conflictNote").textContent !== conflictText) $("conflictNote").textContent = conflictText;
   // How many separate groups of co-authors the people shown fall into.
   const seen = new Set(); let groupCount = 0;
@@ -1413,7 +1568,7 @@ function render() {
     const stack = [p];
     while (stack.length) { const x = stack.pop(); if (seen.has(x)) continue; seen.add(x); notes.get(x.id).withOthers.forEach((q) => stack.push(q)); }
   }
-  if (shown.length > 2 && groupCount < shown.length) summary.append(el("p", { text: "By the papers listed here, the " + shown.length + " people shown fall into " + groupCount + (groupCount === 1 ? " group" : " groups") + " of co-authors. Inviting co-authors together may give one group's view twice." }));
+  if (shown.length > 2 && groupCount < shown.length) summary.append(el("p", { text: "Some of these people have written listed papers together. Counting each set of co-authors once, the " + shown.length + " people shown come from " + groupCount + (groupCount === 1 ? " group" : " separate groups") + ". Two reviewers from one group may give the same view." }));
   const list = $("people");
   list.replaceChildren();
   let divided = false;
@@ -1438,11 +1593,11 @@ function countLine(p, L) {
   const parts = [];
   if (p.firstCount) parts.push("first author on " + p.firstCount);
   if (p.lastCount) parts.push("last author on " + p.lastCount);
-  if (p.middleCount) parts.push("co-author on " + p.middleCount);
+  if (p.middleCount) parts.push("middle author on " + p.middleCount);
   let s = parts.length > 2 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts.join(" and ");
-  s = s.charAt(0).toUpperCase() + s.slice(1) + " matching " + papersWord(p.count) + (p.atLeast ? ", and possibly more." : ".");
+  s = (p.atLeast ? "At least " : "") + p.count + " matching " + papersWord(p.count) + ": " + s + ".";
   const old = Number(L.cfg.today.slice(0, 4)) - 3;
-  if (p.latestYear) s += " The latest is from " + p.latestYear + (Number(p.latestYear) <= old ? ", so check that this person still works in the field." : ".");
+  if (p.latestYear) s += " The latest matching paper is from " + p.latestYear + (Number(p.latestYear) <= old ? ", so check that this person still works in the field." : ".");
   if (L.cfg.design.id) s += " " + p.designCount + (p.designCount === 1 ? " fits" : " fit") + " the design you chose.";
   return s;
 }
@@ -1452,23 +1607,47 @@ function sameAuthor(a, p) {
 }
 // The forms a surname goes by: "van Munster" is also "Munster", and "Garcia-Lopez" is also "Garcia" and "Lopez".
 const PARTICLES = new Set("van von de der den del della di da dos das du la le el al bin ibn ter ten te".split(" "));
+// Müller is also written Mueller, and Ødegård Oedegaard. Both spellings are kept.
+// The other ways a name with ä, ö, ü, ø or å is written (Müller, Mueller; Ødegård, Oedegaard, Odegaard). Single letters (initials) stay as they are.
+function otherSpellings(s) {
+  const long = { "ä": "ae", "ö": "oe", "ü": "ue", "ø": "oe", "å": "aa", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "Ø": "Oe", "Å": "Aa" };
+  const mixed = { "ø": "o", "å": "aa", "Ø": "O", "Å": "Aa" };
+  const n = String(s || "").normalize("NFC");
+  if (!/[äöüøåÄÖÜØÅ]/.test(n)) return [];
+  const each = (map) => n.split(/(\s+)/).map((w) => (letters(w).length >= 2 ? w.replace(/[äöüøåÄÖÜØÅ]/g, (c) => map[c] || c) : w)).join("");
+  return [...new Set([each(long), each(mixed)])].filter((x) => x !== n);
+}
 function surnameForms(last) {
-  const parts = String(last || "").split(/[\s-]+/).map(letters).filter(Boolean);
-  const out = new Set([parts.join("")]);
-  let i = 0;
-  while (i < parts.length - 1 && PARTICLES.has(parts[i])) i++;
-  const core = parts.slice(i);
-  out.add(core.join(""));
-  if (core.length > 1) { out.add(core[0]); out.add(core[core.length - 1]); }
+  const out = new Set();
+  for (const spelt of [last].concat(otherSpellings(last))) {
+    const parts = String(spelt).split(/[\s-]+/).map(letters).filter(Boolean);
+    out.add(parts.join(""));
+    let i = 0;
+    while (i < parts.length - 1 && PARTICLES.has(parts[i])) i++;
+    const core = parts.slice(i);
+    out.add(core.join(""));
+    if (core.length > 1) { out.add(core[0]); out.add(core[core.length - 1]); }
+  }
   for (const f of [...out]) if (f.length < 2) out.delete(f);
   return out;
 }
 // Each typed name becomes the forms of the surname to look for, each with the initial it needs, if one was typed.
 function conflictNames() {
   return $("conflictInput").value.split(/[,;\n&]+|\s+and\s+/i).map((x) => x.trim()).filter(Boolean).map((x) => {
-    const tokens = x.split(/\s+/);
-    const short = (tok) => /^\p{Lu}{1,4}\.?$/u.test(tok.normalize("NFC")) || /^(\p{Lu}\.){1,4}$/u.test(tok.normalize("NFC"));
     const forms = new Map();
+    let open = false;
+    for (const spelt of [x].concat(otherSpellings(x))) open = readName(spelt, forms) || open;
+    return { forms, typed: x, self: new Set(), co: new Set(), inits: new Set(), open };
+  }).filter((n) => n.forms.size);
+}
+// Adds the forms of one typed name to the map, each with the initial it needs. Says whether the name was typed with no initial.
+function readName(x, forms) {
+    const tokens = x.split(/\s+/);
+    // "Smith J K" and "Smith J. A. B." are one set of initials, the same as "Smith JK" and "Smith JAB".
+    let k = tokens.length;
+    while (k > 1 && /^\p{Lu}\.?$/u.test(tokens[k - 1].normalize("NFC"))) k--;
+    if (tokens.length - k >= 2) tokens.splice(k, tokens.length - k, tokens.slice(k).join(""));
+    const short = (tok) => /^\p{Lu}{1,4}\.?$/u.test(tok.normalize("NFC")) || /^(\p{Lu}\.){1,4}$/u.test(tok.normalize("NFC"));
     const put = (f, init) => { if (f.length >= 2 && forms.get(f) !== "") forms.set(f, init); };                 // a form that needs no initial wins
     const read = (toks, initial) => {
       const lead = !initial && toks.length >= 2 && /^\p{Lu}\.?$/u.test(toks[0].normalize("NFC")) ? letters(toks[0]) : "";   // "Y Feng"
@@ -1480,20 +1659,35 @@ function conflictNames() {
         let i = 0;
         while (i < norm.length - 1 && PARTICLES.has(norm[i])) i++;
         if (i) put(norm.slice(i).join(""), initial);
+        // "Feng Yan" may be surname first. That reading needs the initial of the given name, so it adds few marks.
+        if (!initial && !lead && norm.length === 2 && !PARTICLES.has(norm[0]) && norm[1].length > 1) put(norm[0], norm[1][0]);
       }
       return !initial && !lead;
     };
     const end = tokens[tokens.length - 1], before = tokens.slice(0, -1);
-    let open = true;
-    if (tokens.length >= 2 && short(end)) {
+    let open = true, init = "";
+    // Hyphenated surnames are also looked for by each half, with the same initial: PubMed may give one half only.
+    const halves = (tok, initial) => { if (/[-‐]/.test(tok)) tok.split(/[-‐]+/).forEach((h) => put(letters(h), initial)); };
+    if (tokens.length >= 2 && before.every((b) => PARTICLES.has(letters(b)))) {
+      // "van der A", "VAN OS", "de Bo": the last word may belong to the surname. But Le, Du, De and Da are surnames too,
+      // so "Le T" and "Du Bo" are also read as that surname with an initial.
+      open = read(tokens, "");
+      halves(end, "");
+      if (before.length === 1 && letters(before[0]).length >= 2) { put(letters(before[0]), letters(end)[0] || ""); open = false; }
+    } else if (tokens.length >= 2 && /^\p{Ll}\.?$/u.test(end.normalize("NFC")) && letters(before[before.length - 1]).length >= 2) {
+      // "Feng y", "smith j.": a single small letter at the end is an initial.
+      init = letters(end);
+      read(before, init); open = false;
+      halves(before[before.length - 1], init);
+    } else if (tokens.length >= 2 && short(end)) {
       // "Feng Y" ends in an initial. "VAN DAM" and "SMITH ABC", typed in capitals, could be read either way, so both readings are kept.
-      const unclear = !end.includes(".") && letters(end).length >= 3 && before.every((b) => PARTICLES.has(letters(b)) || !/\p{Ll}/u.test(b));
+      const unclear = !end.includes(".") && letters(end).length >= 2 && before.every((b) => PARTICLES.has(letters(b)) || !/\p{Ll}/u.test(b));
       const whole = unclear ? read(tokens, "") : true;
       if (!(unclear && before.every((b) => PARTICLES.has(letters(b))))) read(before, letters(end)[0] || "");
-      open = unclear && whole;
-    } else open = read(tokens, "");
-    return { forms, typed: x, self: new Set(), co: new Set(), inits: new Set(), open };
-  }).filter((n) => n.forms.size);
+      open = false;                                                             // an initial was typed, or may have been
+      if (before.length === 1) halves(before[0], letters(end)[0] || "");
+    } else { open = read(tokens, ""); if (tokens.length === 1) halves(end, ""); else if (/^\p{Lu}\.?$/u.test(tokens[0].normalize("NFC"))) halves(end, letters(tokens[0])); }
+    return open;
 }
 function nameHit(n, forms, init) {
   for (const f of forms) { const need = n.forms.get(f); if (need !== undefined && (!need || need === init)) return true; }
@@ -1535,15 +1729,20 @@ function linkNotes(shown) {
         if (who[i].includes(q)) return;                                     // this author is the person
         who[i].forEach((o) => { if (!note.withOthers.includes(o)) note.withOthers.push(o); });
         if (typed && typed[i].length) {
-          const k = ((a.fore || a.initials || "") + " " + a.last).trim();
-          if (!note.withAuthors.has(k)) note.withAuthors.set(k, pmid);
+          // One author written two ways ("Timothy S Walsh", "Timothy Simon Walsh") is named once, in the fullest form.
+          // Two authors whose first names differ (Yungong Wang, Yunlai Wang) are both named.
+          const ln = a.ln || letters(a.last), toks = foreTokens(a.fore || (a.initials || "").split("").join(" "));
+          const name = ((a.fore || a.initials || "") + " " + a.last).trim();
+          const had = [...note.withAuthors.values()].find((w) => w.ln === ln && namesCompatible(w.toks, toks) && (w.toks[0] || "")[0] === (toks[0] || "")[0]);
+          if (!had) note.withAuthors.set(ln + "|" + note.withAuthors.size, { name, pmid, ln, toks });
+          else if (toks.join("").length > had.toks.join("").length) { had.name = name; had.toks = toks; }
           typed[i].forEach((n) => { n.co.add(q); n.inits.add(firstInit(a)); });
         }
       });
     }
   }
   for (const p of shown) {
-    const init = (p.tokens[0] || "")[0] || "";
+    const init = letters(p.tokens[0] || "")[0] || "";
     const own = names.filter((n) => nameHit(n, p.surnameForms, init));
     own.forEach((n) => { n.self.add(p); n.inits.add(init); });
     notes.get(p.id).self = own.length > 0;
@@ -1567,9 +1766,23 @@ function personEntry(p, rank, L, note) {
 
   const facts = el("dl", { class: "facts" });
   facts.append(el("dt", { text: "Affiliation" }));
-  facts.append(p.affiliation
-    ? el("dd", null, p.affiliation.text + ". From ", link(PUBMED + p.affiliation.pmid + "/", "PubMed record " + p.affiliation.pmid), p.affiliation.year ? ", " + p.affiliation.year + "." : ".")
-    : el("dd", { text: "None printed on these PubMed records." }));
+  if (p.affiliation) {
+    // A very long affiliation (a whole study group, or a short biography) is folded. All of it stays one click away and in every copy and download.
+    const full = p.affiliation.text, dd = el("dd");
+    const from = [". From ", link(PUBMED + p.affiliation.pmid + "/", "PubMed record " + p.affiliation.pmid), p.affiliation.year ? ", " + p.affiliation.year + "." : "."];
+    if (full.length > 300) {
+      const cut = full.lastIndexOf(" ", 220);
+      const text = el("span", { class: "cut", text: full.slice(0, cut > 120 ? cut : 220).replace(/[\s,;.]+$/, "") + " …" });
+      const more = el("button", { type: "button", class: "plain small", text: "Show the full affiliation" });
+      const tail = el("span", null, ...from.map((x) => (typeof x === "string" ? x.replace(/^\. /, " ") : x)));
+      more.addEventListener("click", () => {
+        text.textContent = full; text.classList.remove("cut"); text.setAttribute("tabindex", "-1"); tail.replaceChildren(...from); text.nextSibling.remove();
+        more.remove(); text.focus();
+      });
+      dd.append(text, el("span", { class: "printfull", text: full + "." }), tail, " ", more);
+    } else dd.append(full, ...from);
+    facts.append(dd);
+  } else facts.append(el("dd", { text: "None printed on these PubMed records." }));
   facts.append(el("dt", { text: "ORCID" }));
   facts.append(p.orcid ? el("dd", null, link("https://orcid.org/" + p.orcid, p.orcid), p.orcidPmid ? ". From " : "", p.orcidPmid ? link(PUBMED + p.orcidPmid + "/", "PubMed record " + p.orcidPmid) : "", p.orcidPmid ? "." : "")
                        : el("dd", { text: "None on these PubMed records." }));
@@ -1577,27 +1790,30 @@ function personEntry(p, rank, L, note) {
   facts.append(p.email
     ? el("dd", null, p.email.addresses.join(", ") + ". Printed on ", link(PUBMED + p.email.pmid + "/", "PubMed record " + p.email.pmid),
         p.email.year ? ", " + p.email.year + "." : ".", " Open the record and compare before you use it." +
-        (p.email.year && Number(p.email.year) <= Number(L.cfg.today.slice(0, 4)) - 3 ? " The address is at least three years old and may be out of date." : "") +
+        (p.email.year && Number(p.email.year) <= Number(L.cfg.today.slice(0, 4)) - 3 ? " The address is from " + p.email.year + ", so it may be out of date." : "") +
         (p.email.addresses.length > 1 ? " More than one address is printed, so check which one belongs to this person." : "") +
         (p.email.personal ? " This is a personal mail address, so take extra care to confirm it." : ""))
     : el("dd", { text: "None printed on these PubMed records." }));
   body.append(facts);
   if (p.email && p.email.elsewhere) body.append(el("p", { class: "flag", text: "Check this address. It comes from a paper that names a different institution from the one shown above. The person may have moved, or two people may share this name." }));
 
-  if (note && note.self) body.append(el("p", { class: "flag conflict", text: "Possible conflict. This person has the same surname as one of the manuscript's authors. Check that it is a different person." }));
-  if (note && note.withAuthors.size) {
-    const para = el("p", { class: "flag conflict", text: "Possible conflict. Has written a listed paper with " });
-    [...note.withAuthors].forEach(([name, pmid], i, all) => para.append(i ? (i === all.length - 1 ? " and " : ", ") : "", name + " (", link(PUBMED + pmid + "/", "PubMed record " + pmid), ")"));
-    para.append(".");
+  if (note && (note.self || note.withAuthors.size)) {
+    const para = el("p", { class: "flag conflict", text: "Possible conflict." });
+    if (note.withAuthors.size) {
+      para.append(" This person has written a listed paper with ");
+      [...note.withAuthors.values()].forEach(({ name, pmid }, i, all) => para.append(i ? (i === all.length - 1 ? " and " : ", ") : "", name + " (", link(PUBMED + pmid + "/", "PubMed record " + pmid), ")"));
+      para.append(".");
+    }
+    if (note.self) para.append(" This person has the same surname as one of the manuscript's authors. Check that this is a different person.");
     body.append(para);
   }
   if (note && note.withOthers.length) {
     const who = note.withOthers.map((q) => q.name);
-    body.append(el("p", { class: "pair", text: "Has written a listed paper with " + (who.length > 1 ? who.slice(0, -1).join(", ") + " and " + who[who.length - 1] + ", who are" : who[0] + ", who is") + " also on this list." }));
+    body.append(el("p", { class: "pair", text: "This person has written a listed paper with " + (who.length > 1 ? who.slice(0, -1).join(", ") + " and " + who[who.length - 1] + ", who are" : who[0] + ", who is") + " also on this list." }));
   }
   if (p.mixed) body.append(el("p", { class: "flag", text: "Check this name. " + p.mixed }));
   if (p.initialsOnly) body.append(el("p", { class: "flag", text: "Check this name. PubMed gives initials only for these papers, so this entry may combine more than one person." }));
-  else if (p.crowded) body.append(el("p", { class: "flag", text: "Several people in PubMed share this surname and first initial. Check the affiliation on each paper." }));
+  else if (p.crowded) body.append(el("p", { class: "flag", text: "Several people in this search share this surname and first initial. Check the affiliation on each paper." }));
 
   const head = p.items.slice(0, 2), rest = p.items.slice(2);
   const papers = el("ul", { class: "papers" });
@@ -1654,7 +1870,7 @@ function searchRecord() {
     "Author position: " + (L.cfg.position === "any" ? "any author" : positionWords(L.cfg)),
     "Period: last " + L.cfg.years + " years (from " + L.cfg.fromDate + ")",
     "Left out letters, editorials, comments, corrections, retracted papers and preprints: " + (L.cfg.exclude ? "yes" : "no"),
-    "Papers matched: " + L.count + " (read: " + L.read + (L.cfg.exclude ? "; left out as replies, comments or corrections, by title: " + (L.leftOut || 0) : "") + ")",
+    "Papers matched: " + L.count + " (used: " + L.read + (L.cfg.exclude ? "; left out as replies, comments or corrections, by title: " + (L.leftOut || 0) : "") + ")",
     "People listed: " + shownPeople().length,
     "People shortlisted: " + pickedPeople().length,
     "PubMed query: " + L.query
@@ -1715,10 +1931,11 @@ $("exampleButton").addEventListener("click", () => {
   if (state.running || !mayClearShortlist("The example search")) return;
   state.terms = EXAMPLE.map((t) => Object.assign({}, t));
   $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
-  $("termInput").value = ""; closeSuggestions(); setTermNote(""); renderChips();
+  $("termInput").value = ""; $("conflictInput").value = ""; closeSuggestions(); setTermNote(""); renderChips();
   run(true);
 });
 $("moreButton").addEventListener("click", showMore);
+$("againButton").addEventListener("click", () => { $("resetButton").click(); });
 $("copyButton").addEventListener("click", async () => {
   if (!state.last) return;
   const ok = await copyText(searchRecord());
@@ -1752,7 +1969,7 @@ $("resetButton").addEventListener("click", () => {
   $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
   $("conflictInput").value = "";
   clearResults(); renderChips(); setStatus("");
-  $("termInput").focus();
+  window.scrollTo(0, 0); focusBox();
 });
 let conflictTimer = null;
 $("conflictInput").addEventListener("input", () => { clearTimeout(conflictTimer); conflictTimer = setTimeout(() => { if (state.last && !state.running) render(); }, 300); });
@@ -1760,7 +1977,18 @@ $("trayClear").addEventListener("click", () => {
   const n = state.last ? pickedPeople().length : 0;
   if (n > 1 && !window.confirm("Clear your shortlist of " + n + " people?")) return;
   state.picked = new Set();
-  if (state.last) { render(); toResults(true); } else updateTray();
+  if (!state.last) { updateTray(); return; }
+  // Keep the keyboard where the editor is reading: a Shortlist box on screen, or else the card on screen.
+  render();
+  const cards = [...$("people").children], inView = (r) => r.top >= 0 && r.bottom <= window.innerHeight;
+  const box = cards.map((li) => li.querySelector(".pick input")).find((b) => b && inView(b.getBoundingClientRect()));
+  const card = cards.find((li) => { const r = li.getBoundingClientRect(); return r.bottom > 0 && r.top < window.innerHeight; });
+  const shut = (x) => { const d = x.closest("details"); return !!d && !d.open && x.tagName !== "SUMMARY"; };
+  const candidates = [...document.querySelectorAll("#results button:not([hidden]), #results a[href], #results summary, #results textarea, #searchForm button:not([hidden]), #searchForm input, #searchForm select")]
+    .filter((x) => x.offsetParent && !shut(x) && inView(x.getBoundingClientRect()));
+  if (box) box.focus({ preventScroll: true });
+  else if (card) { card.setAttribute("tabindex", "-1"); card.focus({ preventScroll: true }); }
+  else if (!candidates.some((x) => (x.focus({ preventScroll: true }), document.activeElement === x))) toResults(true);
 });
 $("termList").addEventListener("mousedown", (e) => { e.preventDefault(); if (e.button === 0 && !e.ctrlKey) pressed = true; });   // a press inside the list keeps the cursor in the box
 $("termList").addEventListener("contextmenu", () => { pressed = false; });
@@ -1769,11 +1997,16 @@ $("termList").addEventListener("pointerdown", (e) => { if (e.pointerType !== "mo
 $("termList").addEventListener("pointermove", () => { inList = true; });
 $("termList").addEventListener("pointerleave", () => { inList = false; if (deferred) { deferred = false; refreshSuggestions(); } });
 window.addEventListener("mouseup", () => setTimeout(() => { if (pressed) { pressed = false; if (!$("termList").hidden) renderSuggestions(); } }, 0));
-$("termInput").addEventListener("focus", () => { if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) $("termInput").scrollIntoView({ block: "start" }); });
+$("termInput").addEventListener("focus", () => { if (!scriptFocus && window.matchMedia && window.matchMedia("(pointer: coarse)").matches) $("termInput").scrollIntoView({ block: "start" }); });
 renderChips();
 // A browser can keep a page in memory after the editor leaves it and show it again on Back, with the shortlist and the names
 // in the conflict box. The page is loaded afresh instead, so the next person sees none of it.
-window.addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
+window.addEventListener("pageshow", (e) => { if (e.persisted) { state.picked = new Set(); location.reload(); } });
+// The copy a browser keeps in memory is blanked as the page is left, so it never shows the shortlist or the names, even for a moment.
+window.addEventListener("pagehide", (e) => { if (e.persisted) { $("conflictInput").value = ""; document.documentElement.style.visibility = "hidden"; } });
+$("conflictInput").value = "";
+// While people are shortlisted, the browser asks before the page is left, so a slip of the Back button or a swipe loses nothing.
+window.addEventListener("beforeunload", (e) => { if (state.last && pickedPeople().length) { e.preventDefault(); e.returnValue = ""; } });
 // On a computer, put the cursor in the term box so the editor can start typing at once.
 // Only when the box is in view, so the cursor is never somewhere the editor has not seen.
 if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches && $("termInput").getBoundingClientRect().bottom < window.innerHeight) $("termInput").focus({ preventScroll: true });
