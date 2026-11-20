@@ -13,7 +13,9 @@ Live page: https://amaclullich.github.io/reviewer-finder/
 - The editor can choose a study design, choose the author position, shortlist people and copy or download the shortlist.
 - A search with 20 to 49 matching papers gives a short list with a warning. Below 20 the page stops and offers a wider search.
 - The page marks listed people who have written a listed paper together.
-- The conflict check takes the surnames of the manuscript's authors. It is read in the editor's browser and sent nowhere. It is left out of every copy and download.
+- Replies, comments and corrections that PubMed has not labelled as such are left out by their titles, and the page says how many.
+- An entry is marked when its papers share no institution, no co-author and no ORCID, because it may combine people with the same name.
+- The conflict check takes the surnames of the manuscript's authors, and says for each one which entries have that surname and which share a paper with it. It is read in the editor's browser and sent nowhere. It is left out of every copy and download.
 - Email addresses appear on the page and in the shortlist download only. The list download leaves them out.
 - The journal badge is stored inside the file, so the page loads nothing from other sites.
 
