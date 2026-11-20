@@ -157,7 +157,7 @@
   .person .divider { grid-column: 1 / -1; margin: 0 0 1.4rem; padding-top: 0.7rem; border-top: 3px solid var(--navy); font-family: var(--serif); font-size: 1.15rem; color: var(--navy); max-width: none; }
   .conflict { margin-top: 1.5rem; max-width: 42rem; }
   .conflict .field-label { font-size: 1.15rem; }
-  .conflict input { font: inherit; width: 100%; padding: 0.6rem 0.75rem; border: 1.5px solid var(--muted); border-radius: 4px; margin-top: 0.5rem; background: #fff; color: var(--ink); }
+  .conflict textarea { font: inherit; width: 100%; padding: 0.6rem 0.75rem; border: 1.5px solid var(--muted); border-radius: 4px; margin-top: 0.5rem; background: #fff; color: var(--ink); resize: vertical; min-height: 3.2rem; display: block; }
   .people { list-style: none; padding: 0; margin: 2rem 0 0; border-bottom: 1px solid var(--rule); }
   .person { display: grid; grid-template-columns: 4rem 1fr; border-top: 1px solid var(--rule); padding: 1.6rem 0.75rem 1.7rem; }
   .person.picked { background: var(--tint); box-shadow: inset 0.3rem 0 0 var(--purple); }
@@ -235,7 +235,7 @@
   <noscript><p class="stop">This page needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
 
 
-  <form id="searchForm" novalidate>
+  <form id="searchForm" novalidate autocomplete="off">
     <div class="start">
     <section class="keepout" aria-labelledby="keepoutHead">
       <h2 id="keepoutHead">Keep the manuscript out of this page</h2>
@@ -317,7 +317,7 @@
     <section class="conflict" id="conflict" aria-labelledby="conflictLabel" hidden>
       <label class="field-label" id="conflictLabel" for="conflictInput">Mark possible conflicts (optional)</label>
       <p class="hint" id="conflictHint">Type the surnames of the manuscript's authors, with commas between them. For a common surname add an initial, as in Feng Y. The page marks matches and their co-authors below. What you type stays in this browser and is left out of every copy and download.</p>
-      <input type="text" id="conflictInput" autocomplete="off" spellcheck="false" aria-describedby="conflictHint" placeholder="For example: Okafor, Lindqvist, Tan">
+      <textarea id="conflictInput" rows="2" autocomplete="off" spellcheck="false" aria-describedby="conflictHint" placeholder="For example: Okafor, Lindqvist, Tan"></textarea>
       <p class="hint" id="conflictNote" role="status"></p>
     </section>
     </div>
@@ -348,7 +348,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 3.4, November 2026.</p>
+  <p>Version 3.5, November 2026.</p>
 </div></div>
 </footer>
 
@@ -541,12 +541,12 @@ function leftoverNote() {
 }
 function closeSuggestions() {
   clearTimeout(meshTimer); clearTimeout(synTimer); look.seq++;
-  suggestions = []; activeIndex = -1; listNote = ""; notePending = false; userMoved = false; inList = false; deferred = false;
+  suggestions = []; activeIndex = -1; listNote = ""; notePending = false; userMoved = false; inList = false; deferred = false; drawnIds = "";
   $("termList").hidden = true; $("termList").replaceChildren(); $("listStatus").textContent = "";
   $("termInput").setAttribute("aria-expanded", "false");
   $("termInput").removeAttribute("aria-activedescendant");
 }
-let pressed = false, inList = false, deferred = false, drawnSeq = -1;
+let pressed = false, inList = false, deferred = false, drawnSeq = -1, movedAt = 0, drawnIds = "";
 function renderSuggestions() {
   if (pressed) return;                                                     // a click is in progress: the list is redrawn when it is over
   const list = $("termList");
@@ -557,10 +557,14 @@ function renderSuggestions() {
     const li = el("li", { role: "option", id: "opt" + i, class: s.kind === "words" ? "words" : null,
       "aria-selected": i === activeIndex ? "true" : "false", text: s.display });
     if (s.syn) li.append(el("span", { class: "syn", text: " includes “" + s.syn + "”" }));
-    li.addEventListener("click", () => addTerm(s));
+    // A click that comes just after the options moved may have been aimed at the option that was there before. It is not taken.
+    li.addEventListener("click", () => { if (Date.now() - movedAt < 600) return; addTerm(s); });
     list.append(li);
   });
   list.hidden = false;
+  const ids = suggestions.map((s) => s.id).join("|");
+  if (drawnIds && ids !== drawnIds && !drawnIds.split("|").every((id, i) => suggestions[i] && suggestions[i].id === id)) movedAt = Date.now();   // options moved, not only added at the end
+  drawnIds = ids;
   const say = notePending ? "" : listNote;                                 // read out by screen readers, once
   if ($("listStatus").textContent !== say) $("listStatus").textContent = say;
   $("termInput").setAttribute("aria-expanded", suggestions.length ? "true" : "false");
@@ -688,14 +692,20 @@ async function lookupSynonyms(q, seq) {
   look.syns = found || []; look.synsFailed = found === null;
   refreshSuggestions();
 }
+// Adding or removing an entry changes the lines above the term box. The page scrolls by the same amount, so the box stays under the editor's eyes.
+function keepBoxStill(change) {
+  const box = $("termInput"), before = box.getBoundingClientRect().top;
+  change();
+  const moved = box.getBoundingClientRect().top - before;
+  if (moved && document.activeElement === box && window.scrollY + moved >= 0) window.scrollBy(0, moved);
+}
 function addTerm(s) {
   if (state.terms.length >= SETTINGS.maxTerms) { setTermNote("The limit is five entries. Remove one to add another.", true); closeSuggestions(); return; }
   if (!state.terms.some((t) => t.id === s.id)) state.terms.push({ kind: s.kind, label: s.label, id: s.id });
   $("termInput").value = "";
   closeSuggestions();
-  setTermNote(state.terms.length === 3 ? "Three entries find few papers. Two are usually enough." : "");
-  renderChips();
-  $("termInput").focus();
+  $("termInput").focus({ preventScroll: true });
+  keepBoxStill(() => { setTermNote(state.terms.length === 3 ? "Three entries find few papers. Two are usually enough." : ""); renderChips(); });
 }
 function termName(t) { return t.kind === "words" ? "the words “" + t.label + "”" : t.label; }
 function renderChips() {
@@ -705,7 +715,7 @@ function renderChips() {
     const remove = el("button", { type: "button", "aria-label": "Remove " + termName(t), text: "×" });
     remove.addEventListener("click", () => {
       state.terms = state.terms.filter((x) => x.id !== t.id);
-      renderChips(); setTermNote(""); $("termInput").focus();
+      $("termInput").focus({ preventScroll: true }); keepBoxStill(() => { renderChips(); setTermNote(""); });
     });
     chips.append(t.kind === "words"
       ? el("li", { class: "words" }, el("span", { text: "“" + t.label + "”" }), el("span", { class: "kind", text: "exact words" }), remove)
@@ -727,6 +737,7 @@ $("termInput").addEventListener("input", () => {
   inList = false; deferred = false;                                         // typing again: the pointer is no longer choosing
   look.at = Date.now();
   if (activeIndex >= 0) { activeIndex = -1; if (!$("termList").hidden) renderSuggestions(); }   // Enter must not take a heading from the list for the earlier letters
+  drawnIds = "";                                                            // the list for new letters is a new list, not a list that moved
   meshTimer = setTimeout(() => lookupLabels(q, seq), 250);
   if (q.length >= 3) synTimer = setTimeout(() => lookupSynonyms(q, seq), 600);
   // If the second source is slow but the first has answered, stop waiting for it after five seconds.
@@ -981,6 +992,16 @@ function affWords(affs) {
   }
   return words;
 }
+// Telephone and fax numbers are left out, and a very long affiliation (a whole study group, or a short biography) is cut at a comma.
+function trimAffiliation(a) {
+  let s = a.replace(/[,;.]?\s*\(?(?:tel|telephone|phone|fax|ph)\b\.?\)?\s*(?:no\.?|number)?\s*[:.]?\s*\+?[\d\s()./-]{7,}\d/gi, "")
+           .replace(/,\s*\+?\(?\d[\d\s()./-]{6,}\d\s*$/, (m) => ((m.match(/\d/g) || []).length >= 8 ? "" : m)).trim();
+  if (s.length > 260) {
+    const cut = s.lastIndexOf(",", 240);
+    s = s.slice(0, cut > 120 ? cut : 240).replace(/[\s,;.]+$/, "") + " (shortened)";
+  }
+  return s;
+}
 function buildPerson(c, atLeast, crowded) {
   const seen = new Set(), seenTitle = new Set();
   const titleKey = (i) => String(i.paper.title || "").replace(/^\s*\[translated article\]\s*/i, "").normalize("NFD").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "")
@@ -1007,7 +1028,7 @@ function buildPerson(c, atLeast, crowded) {
     if (!affiliation && it.node.affs.length) {
       const tidy = (a) => a.replace(/\s*(electronic address|e-?mail(?: address)?)\s*:?\s*/gi, " ").replace(EMAIL_RE, "").replace(/^[\s*†‡§¶#|•·⁎∗]+/u, "").replace(/^\d{1,2}(?=\p{Lu}\p{Ll})/u, "").replace(/^\s*from the\s+/i, "")
         .replace(/\s+([.;,])/g, "$1").replace(/[\s.;,]+$/g, "").replace(/\s{2,}/g, " ").trim();
-      const parts = it.node.affs.map(tidy).filter(Boolean);
+      const parts = it.node.affs.map(tidy).map(trimAffiliation).filter(Boolean);
       const shown = parts.slice(0, 2).join("; ") + (parts.length > 2 ? "; and " + (parts.length - 2) + " more on the record" : "");
       if (shown) affiliation = { text: shown, pmid: it.paper.pmid, year: it.paper.year };
     }
@@ -1380,7 +1401,7 @@ function render() {
     if (self.length) s += listOf(self) + (self.length === 1 ? " has" : " have") + " this surname.";
     if (both.length) s += " " + upper(listOf(both)) + " also" + (both.length === 1 ? " shares" : " share") + " a listed paper with another author of this surname.";
     if (others.length) s += (self.length ? " " + upper(listOf(others)) : listOf(others)) + (others.length === 1 ? " shares" : " share") + " a listed paper with an author of this surname.";
-    if (n.open && n.inits.size >= 3) s += " This surname covers several people here. Add the author's initial after it to narrow the check.";
+    if (n.open && n.inits.size >= 2 && new Set(self.concat(co)).size >= 3) s += " This surname covers several people here. Add the author's initial after it to narrow the check.";
     return s;
   }).join("\n") + "\nThe check covers the papers listed here, so check other links yourself.";
   if ($("conflictNote").textContent !== conflictText) $("conflictNote").textContent = conflictText;
@@ -1633,7 +1654,7 @@ function searchRecord() {
     "Author position: " + (L.cfg.position === "any" ? "any author" : positionWords(L.cfg)),
     "Period: last " + L.cfg.years + " years (from " + L.cfg.fromDate + ")",
     "Left out letters, editorials, comments, corrections, retracted papers and preprints: " + (L.cfg.exclude ? "yes" : "no"),
-    "Papers matched: " + L.count + " (read: " + L.read + (L.leftOut ? "; left out as replies, comments or corrections, by title: " + L.leftOut : "") + ")",
+    "Papers matched: " + L.count + " (read: " + L.read + (L.cfg.exclude ? "; left out as replies, comments or corrections, by title: " + (L.leftOut || 0) : "") + ")",
     "People listed: " + shownPeople().length,
     "People shortlisted: " + pickedPeople().length,
     "PubMed query: " + L.query
@@ -1743,11 +1764,16 @@ $("trayClear").addEventListener("click", () => {
 });
 $("termList").addEventListener("mousedown", (e) => { e.preventDefault(); if (e.button === 0 && !e.ctrlKey) pressed = true; });   // a press inside the list keeps the cursor in the box
 $("termList").addEventListener("contextmenu", () => { pressed = false; });
+$("termList").addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse") pressed = true; });
+["pointerup", "pointercancel"].forEach((type) => window.addEventListener(type, (e) => { if (e.pointerType !== "mouse") setTimeout(() => { if (pressed) { pressed = false; if (!$("termList").hidden) renderSuggestions(); } }, 0); }));
 $("termList").addEventListener("pointermove", () => { inList = true; });
 $("termList").addEventListener("pointerleave", () => { inList = false; if (deferred) { deferred = false; refreshSuggestions(); } });
 window.addEventListener("mouseup", () => setTimeout(() => { if (pressed) { pressed = false; if (!$("termList").hidden) renderSuggestions(); } }, 0));
 $("termInput").addEventListener("focus", () => { if (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) $("termInput").scrollIntoView({ block: "start" }); });
 renderChips();
+// A browser can keep a page in memory after the editor leaves it and show it again on Back, with the shortlist and the names
+// in the conflict box. The page is loaded afresh instead, so the next person sees none of it.
+window.addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
 // On a computer, put the cursor in the term box so the editor can start typing at once.
 // Only when the box is in view, so the cursor is never somewhere the editor has not seen.
 if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches && $("termInput").getBoundingClientRect().bottom < window.innerHeight) $("termInput").focus({ preventScroll: true });
