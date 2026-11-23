@@ -239,7 +239,7 @@
   <div class="quick-guide">
     <p>This HTML tool searches PubMed directly, without AI, to find potential peer reviewers from published papers with “delirium” in the title.</p>
     <ol>
-      <li><strong>Add a topic, if useful.</strong> Type something like “hip fracture” and select a suggestion.</li>
+      <li><strong>Narrow the search (optional).</strong> Add a term such as “hip fracture” to focus the results.</li>
       <li><strong>Set the search options.</strong> Choose the publication period and author position. Study design helps rank candidates.</li>
       <li><strong>Select Find candidates.</strong> Check candidates’ papers and conflicts before inviting anyone.</li>
     </ol>
@@ -255,14 +255,14 @@
       <p>Leave out the title, the abstract, the findings and any trial name. The page sends your topics to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
     </section>
     <fieldset>
-      <legend>What should the reviewer know about?</legend>
-      <p id="termHow">Select a suggestion to add a topic. Leave this blank to search by title and the settings below.</p>
+      <legend>Add a PubMed search term (optional)</legend>
+      <p id="termHow">Type a term and select it from the suggestions. Leave blank to search for “delirium” in the title using the filters below.</p>
       <p class="hint" id="termHint">For a tool or drug without a PubMed subject heading, choose “Exact words”.</p>
       <ul class="chips" id="chips" aria-label="Entries you have picked"></ul>
       <div class="combo">
         <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
                placeholder="e.g. hip fracture" role="combobox" aria-expanded="false"
-               aria-controls="termList" aria-autocomplete="list" aria-describedby="termHow termHint" aria-label="Add a search topic">
+               aria-controls="termList" aria-autocomplete="list" aria-describedby="termHow termHint" aria-label="Additional PubMed search term">
         <ul class="suggestions" id="termList" role="listbox" aria-label="Suggested search topics" tabindex="-1" hidden></ul>
       </div>
       <p class="hint" id="termNote" role="status"></p>
