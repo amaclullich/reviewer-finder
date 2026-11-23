@@ -58,14 +58,10 @@
   .mast img { width: 6.5rem; height: 6.5rem; display: block; }
   .mast h1 { color: #fff; font-size: clamp(2.1rem, 5.2vw, 3.3rem); letter-spacing: -0.01em; }
   .journal { font-family: var(--serif); font-style: italic; color: #eadcf5; margin: 0 0 0.35rem; font-size: 1.1rem; }
-  .lede { font-size: 1.2rem; line-height: 1.45; margin-top: 0.7rem; color: #fff; }
-
-  /* Three steps */
-  .steps { list-style: none; margin: 2.5rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; }
-  .steps li { border-top: 3px solid var(--purple); padding-top: 0.8rem; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto 1fr; align-items: start; gap: 0.15rem 0.9rem; }
-  .steps .num { font-family: var(--serif); font-size: 2.8rem; line-height: 1; color: var(--navy); grid-row: span 2; }
-  .steps strong { font-family: var(--serif); font-weight: 400; font-size: 1.25rem; color: var(--navy); padding-top: 0.2rem; }
-  .steps span.what { color: var(--ink); font-size: 1rem; }
+  .quick-guide { margin-top: 1.25rem; }
+  .quick-guide p { max-width: none; margin: 0; }
+  .quick-guide ol { margin: 0.4rem 0 0; padding-left: 1.5rem; }
+  .quick-guide li + li { margin-top: 0.2rem; }
 
   .keepout { background: var(--tint); border-left: 0.4rem solid var(--purple); padding: 1rem 1.3rem 1.2rem; margin-bottom: 1.75rem; }
   .keepout h2 { font-size: 1.25rem; }
@@ -74,7 +70,7 @@
     .start { display: flex; flex-direction: column; }
     .start .keepout { order: 2; margin-top: 0; }
   }
-  @media (max-height: 46rem) and (min-width: 46rem) { .mast .lede { display: none; } .mast .wrap { padding-top: 1rem; padding-bottom: 1rem; } .mast img { width: 4.5rem; height: 4.5rem; } }
+  @media (max-height: 46rem) and (min-width: 46rem) { .mast .wrap { padding-top: 1rem; padding-bottom: 1rem; } .mast img { width: 4.5rem; height: 4.5rem; } }
   @media (min-width: 60rem) {
     .start { display: grid; grid-template-columns: minmax(0, 1fr) 17.5rem; column-gap: 2.5rem; align-items: start; }
     .start .keepout { grid-column: 2; grid-row: 1; margin: 0.4rem 0 0; }
@@ -87,7 +83,6 @@
   legend, .field-label { font-family: var(--serif); font-size: 1.35rem; color: var(--navy); padding: 0; display: block; }
   .hint { color: var(--muted); font-size: 0.975rem; margin-top: 0.35rem; }
   .hint.warn { background: var(--note-bg); color: var(--note-ink); padding: 0.6rem 0.8rem; margin-top: 0.75rem; max-width: 34rem; font-size: 1rem; }
-  .rule { font-weight: 600; color: var(--navy); margin-top: 0.6rem; font-size: 1.1rem; }
   #termHow { margin-top: 0.3rem; }
   input[type="text"], select {
     font: inherit; color: var(--ink); background: #fff; border: 1.5px solid var(--navy); border-radius: 4px;
@@ -199,8 +194,7 @@
     .mast img { width: 3.5rem; height: 3.5rem; margin-top: 0.2rem; }
     .mast h1 { font-size: 1.75rem; }
     .journal { font-size: 0.95rem; }
-    .lede { font-size: 1rem; }
-    .steps { grid-template-columns: 1fr; gap: 1.25rem; }
+    .quick-guide { font-size: 1rem; }
     .row { grid-template-columns: 1fr; }
     .person { display: block; padding-left: 0.6rem; padding-right: 0.6rem; }
     .rank { font-size: 1.5rem; margin-bottom: 0.35rem; }
@@ -218,8 +212,8 @@
   }
   @media print {
     .mast { background: #fff; color: #000; border: 0; }
-    .mast h1, .journal, .lede { color: #000; }
-    .steps, .keepout, form, .actions, .tray, .pick, .more, #actionNote, #privacyNote, #staleNote, .conflict { display: none !important; }
+    .mast h1, .journal { color: #000; }
+    .quick-guide, .keepout, form, .actions, .tray, .pick, .more, #actionNote, #privacyNote, #staleNote, .conflict { display: none !important; }
     body.has-tray { padding-bottom: 0 !important; }
     .facts button { display: none !important; }
     .facts .cut { display: none; }
@@ -237,12 +231,19 @@
     <div>
       <p class="journal" id="journalLine"></p>
       <h1>Reviewer candidate finder</h1>
-      <p class="lede">You have a manuscript and need reviewers. This page finds candidates in PubMed in a minute or two.</p>
     </div>
   </div>
 </header>
 
 <main class="wrap">
+  <div class="quick-guide">
+    <p>This HTML tool searches PubMed directly, without AI, to find potential peer reviewers from published papers with “delirium” in the title.</p>
+    <ol>
+      <li><strong>Add a topic, if useful.</strong> Type something like “hip fracture” and select a suggestion.</li>
+      <li><strong>Set the search options.</strong> Choose the publication period and author position. Study design helps rank candidates.</li>
+      <li><strong>Select Find candidates.</strong> Check candidates’ papers and conflicts before inviting anyone.</li>
+    </ol>
+  </div>
 
   <noscript><p class="stop">This page needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
 
@@ -254,16 +255,15 @@
       <p>Leave out the title, the abstract, the findings and any trial name. The page sends your topics to PubMed, as any PubMed search does. It contacts no other service and stores nothing.</p>
     </section>
     <fieldset>
-      <legend>Topics of the manuscript</legend>
-      <p class="rule" id="termRule">Pick from the list as you type. Typing alone adds nothing.</p>
-      <p id="termHow">MeSH headings are PubMed's subject headings. Type a word or two, then click a heading. <span id="startHint">Delirium is already added. Add one more, such as Hip Fractures.</span></p>
-      <p class="hint" id="termHint">For a tool or drug with no heading, pick the last option, “Exact words”.</p>
+      <legend>What should the reviewer know about?</legend>
+      <p id="termHow">Select a suggestion to add a topic. Leave this blank to search by title and the settings below.</p>
+      <p class="hint" id="termHint">For a tool or drug without a PubMed subject heading, choose “Exact words”.</p>
       <ul class="chips" id="chips" aria-label="Entries you have picked"></ul>
       <div class="combo">
         <input type="text" id="termInput" maxlength="60" autocomplete="off" spellcheck="false"
-               placeholder="Type a word or two" role="combobox" aria-expanded="false"
-               aria-controls="termList" aria-autocomplete="list" aria-describedby="termRule termHow termHint" aria-label="Search the MeSH headings">
-        <ul class="suggestions" id="termList" role="listbox" aria-label="Matching MeSH headings" tabindex="-1" hidden></ul>
+               placeholder="e.g. hip fracture" role="combobox" aria-expanded="false"
+               aria-controls="termList" aria-autocomplete="list" aria-describedby="termHow termHint" aria-label="Add a search topic">
+        <ul class="suggestions" id="termList" role="listbox" aria-label="Suggested search topics" tabindex="-1" hidden></ul>
       </div>
       <p class="hint" id="termNote" role="status"></p>
       <p class="hint added" id="addedNote" aria-hidden="true"></p>
@@ -286,7 +286,7 @@
         </select>
       </div>
       <div>
-        <label class="field-label" for="yearsSelect">Period</label>
+        <label class="field-label" for="yearsSelect">Publication period</label>
         <select id="yearsSelect">
           <option value="3">Last 3 years</option>
           <option value="5" selected>Last 5 years</option>
@@ -376,7 +376,6 @@ const SETTINGS = {
   journalLine: "For handling editors of the journal Delirium",
   contactEmail: "",              // optional: NCBI asks tool owners to give a contact address
   toolName: "reviewer_candidate_finder",
-  startTerms: [{ kind: "mesh", label: "Delirium", id: "D003693" }],   // entries already chosen when the page opens; use [] for none
   minPapers: 20,                 // the search stops below this number of matching papers
   fullPapers: 50,                // below this number the list is marked as short, and people with one matching paper are included
   maxPapersRead: 3000,           // the page reads at most this many of the most recent papers
@@ -410,7 +409,6 @@ const DESIGNS = [
 ];
 
 const EXAMPLE = [
-  { kind: "mesh", label: "Delirium", id: "D003693" },
   { kind: "mesh", label: "Hip Fractures", id: "D006620" }
 ];
 
@@ -538,8 +536,7 @@ async function countFor(query) {
    Entry picker. An entry is a MeSH term from the lookup, or a short
    run of exact words. Nothing else can be added.
    ------------------------------------------------------------------ */
-const startTerms = () => SETTINGS.startTerms.map((t) => Object.assign({}, t));
-const state = { terms: startTerms(), dropNote: "", typedAt: 0, startedAt: 0, running: false, stopped: false, last: null, notes: null, shown: SETTINGS.listSize, picked: new Set() };
+const state = { terms: [], dropNote: "", typedAt: 0, startedAt: 0, running: false, stopped: false, last: null, notes: null, shown: SETTINGS.listSize, picked: new Set() };
 let meshTimer = null, synTimer = null, meshAbort = null, suggestions = [], activeIndex = -1, listNote = "", notePending = false, userMoved = false;
 const look = { seq: 0, q: "", us: "", at: 0, labels: null, syns: null, labelsFailed: false, synsFailed: false };
 // MeSH uses American spelling. When the typed word has a British spelling, the page looks up the American one as well.
@@ -675,10 +672,8 @@ function refreshSuggestions() {
     const score = l === ql || l === qa ? 0 : l.startsWith(ql) || l.startsWith(qa) ? 1 : s.synRank === 0 ? 2 : inLabel ? 3 : y ? 3 + s.synRank : 8;
     add({ kind: "mesh", label: s.label, id: s.id, display: s.label, syn: inLabel ? "" : s.syn, score, order: s.order });
   }
-  // The journal's own heading comes first whenever the typed words include it.
   const plain = (x) => " " + x.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim() + " ";
   const hasWords = (text, label) => plain(text).includes(plain(label));
-  for (const t of SETTINGS.startTerms) if (t.kind === "mesh" && hasWords(ql, t.label)) add({ kind: "mesh", label: t.label, id: t.id, display: t.label, syn: "", score: -1, order: 0, noEnter: ql !== t.label.toLowerCase() });
   // A heading already chosen that the typed words contain: say so, and mark the other headings that hold its name.
   const had = state.terms.find((t) => t.kind === "mesh" && hasWords(ql, t.label));
   if (had) for (const x of byId.values()) if (x.id !== had.id && hasWords(x.label, had.label)) x.display = x.label + " (a separate heading)";
@@ -797,9 +792,6 @@ function renderChips() {
       : el("li", null, el("span", { text: t.label }), el("span", { class: "kind", text: "MeSH heading" }), remove));
   });
   $("runButton").disabled = state.running;
-  const start = SETTINGS.startTerms;
-  if (start.length === 1) $("startHint").textContent = start[0].label + " is already added. Add one more, such as Hip Fractures.";
-  $("startHint").hidden = !(start.length === 1 && state.terms.length === 1 && state.terms[0].id === start[0].id);
   checkStale();
 }
 $("termInput").addEventListener("input", () => {
@@ -879,8 +871,9 @@ function headingPhrases(label) {
   return out;
 }
 function buildQuery(cfg, terms, fromDate) {
-  const topic = (terms || cfg.terms).map(termClause).join(" AND ");
-  let q = "(" + topic + ') AND ("' + (fromDate || cfg.fromDate) + '"[Date - Publication] : "3000"[Date - Publication])';
+  const topics = (terms || cfg.terms).map(termClause);
+  const dates = '(' + quote(fromDate || cfg.fromDate) + '[Date - Publication] : ' + quote(cfg.today.replace(/-/g, "/")) + '[Date - Publication])';
+  let q = ['"delirium"[Title]', dates, ...topics].join(" AND ");
   if (cfg.exclude) q += " NOT " + EXCLUDE;
   return q;
 }
@@ -1279,7 +1272,7 @@ function stopBox(...paragraphs) { return el("div", { class: "stop" }, ...paragra
 // Which single change would give enough papers: leave out one entry, or look further back.
 async function findFixes(cfg, least) {
   const fixes = [];
-  if (cfg.terms.length > 1) for (const t of cfg.terms) {
+  for (const t of cfg.terms) {
     const n = await countFor(buildQuery(cfg, cfg.terms.filter((x) => x.id !== t.id)));
     if (n >= least) fixes.push({ n, drops: true, label: "Search without " + termName(t) + " (" + fmt(n) + (n > 3000 ? " papers, a much wider topic)" : " papers)"),
       apply: () => { restoreForm(cfg); state.terms = cfg.terms.filter((x) => x.id !== t.id); state.dropNote = termName(t); renderChips(); } });
@@ -1312,13 +1305,16 @@ function fixBox(fixes, lead) {
   box.append(ul);
   return box;
 }
-function printLineFor(cfg) { return "Searched: " + cfg.terms.map(termName).join(", ") + ". Last " + cfg.years + " years. " + cfg.today + "."; }
+function printLineFor(cfg) {
+  const topics = cfg.terms.length ? " Additional topics: " + cfg.terms.map(termName).join(", ") + "." : "";
+  return "Searched: delirium in the title. Last " + cfg.years + " years. " + cfg.today + "." + topics;
+}
 async function showTooFew(count, cfg) {
   $("printLine").textContent = printLineFor(cfg);
   $("summary").append(stopBox(
     count === 0 ? "PubMed has no papers that match." : "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
     "The page needs at least " + SETTINGS.minPapers + "." + (count > 0 ? " With fewer, the list is too narrow to choose from, and the papers may all come from one study." : ""),
-    cfg.terms.length > 1 ? "A paper must match every entry, so fewer entries find more papers." : null,
+    cfg.terms.length ? "Each paper must match every topic, so you can try removing a topic." : null,
     count === 1 ? "You can still open this paper in PubMed with the link below." : count > 1 ? "You can still open these papers in PubMed with the link below and choose from them yourself." : null));
   $("results").hidden = false;
   setStatus("Checking which change would help.");
@@ -1351,7 +1347,6 @@ async function run(asked) {
   const dropped = state.dropNote; state.dropNote = "";                      // the note belongs to this attempt only
   if (synAbort) { synAbort.abort(); synAbort = null; }                     // a heading lookup still running must not hold up the search
   if (leftoverNote()) { $("termInput").focus(); return; }
-  if (!state.terms.length) { setTermNote("Choose at least one MeSH heading from the list first.", true); $("termInput").focus(); return; }
   if (!asked && !mayClearShortlist("A new search")) return;
   clearResults(); setRunning(true);
   try {
@@ -1384,6 +1379,7 @@ async function run(asked) {
     const toRead = Math.min(count, SETTINGS.maxPapersRead);
     const papers = [];
     let leftOut = 0;
+    let titleMismatch = 0;
     for (let start = 0; start < toRead; start += SUMMARY_BATCH) {
       const done = Math.min(start + SUMMARY_BATCH, toRead);
       setStatus("Reading papers: " + fmt(done) + " of " + fmt(toRead) + "."); setProgress(0.1 + 0.5 * (start / toRead));
@@ -1405,7 +1401,9 @@ async function run(asked) {
         const persons = x.authors.filter((a) => a && a.authtype === "Author" && a.name).map((a) => a.name);
         if (!persons.length) continue;
         const sort = x.sortpubdate || "";
-        const title = cleanTitle(x.title || x.booktitle || "");
+        const title = cleanTitle(x.title);
+        // PubMed's Title field can also match the collection title of a book.
+        if (!/(?:^|[^\p{L}\p{N}])delirium(?=$|[^\p{L}\p{N}])/iu.test(title)) { titleMismatch++; continue; }
         if (cfg.exclude && (NOT_A_PAPER.test(title.replace(/^[\s\[("“]+/, "")) || ENDS_AS_REPLY.test(title))) { leftOut++; continue; }
         papers.push({ pmid: String(uid), title, source: x.source || "", sort, year: sort.slice(0, 4) || String(x.pubdate || "").slice(0, 4),
                       first: persons[0], last: persons[persons.length - 1], solo: persons.length === 1, all: persons });
@@ -1420,7 +1418,7 @@ async function run(asked) {
       setStatus("Checking names against the full records: " + fmt(done) + " of " + fmt(total) + "."); setProgress(0.62 + 0.35 * (done / total));
     });
 
-    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, leftOut, designCount, resolver, minOwn, sig, dropped, fixes: [] };
+    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, leftOut, titleMismatch, designCount, resolver, minOwn, sig, dropped, fixes: [] };
     if (resolver.cursor >= groups.length && resolver.people.length < 5) {     // hardly anyone qualifies: see whether one change would help
       setStatus("Checking which change would help.");
       try { state.last.fixes = (await findFixes(cfg, Math.max(SETTINGS.fullPapers, count * 2))).slice(0, 3); }
@@ -1489,11 +1487,11 @@ function positionWords(cfg) { return cfg.position === "first" ? "first author" :
 // The changes that would find more people, given the search as it was made.
 function widerAdvice(cfg) {
   const ways = [];
-  if (cfg.terms.length > 1) ways.push("remove an entry");
+  if (cfg.terms.length) ways.push("remove a topic");
   if (cfg.years < 10) ways.push("choose a longer period");
   if (cfg.position === "first" || cfg.position === "last") ways.push("choose “First or last author”");
   else if (cfg.position === "either") ways.push("choose “Any author”");
-  if (!ways.length) ways.push("choose broader headings");
+  if (!ways.length) ways.push("open the search in PubMed");
   const s = ways.length > 1 ? ways.slice(0, -1).join(", ") + " or " + ways[ways.length - 1] : ways[0];
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -1502,11 +1500,12 @@ function render() {
   const shown = shownPeople();
   const summary = $("summary");
   summary.replaceChildren();
-  let first = "PubMed has " + fmt(L.count) + " papers that match.";
+  let first = "PubMed found " + fmt(L.count) + " papers matching the title, dates and other search settings.";
   if (L.count > L.toRead) first += " The page read the most recent " + fmt(L.toRead) + ".";
   if (missing.summaries || missing.records) summary.append(el("p", { class: "flag", text: "PubMed did not send " + (missing.summaries ? fmt(missing.summaries) + " of the paper summaries" : "") + (missing.summaries && missing.records ? " and " : "") + (missing.records ? fmt(missing.records) + " of the full records" : "") + ", so some counts may be low. Search again to complete them." }));
   if (L.leftOut) first += " The page left out " + L.leftOut + (L.leftOut === 1 ? " paper that is a reply, a comment or a correction, judged by its title." : " papers that are replies, comments or corrections, judged by their titles.");
   summary.append(el("p", { text: first }));
+  if (L.titleMismatch) summary.append(el("p", { text: "Records skipped because their own titles lack the word “delirium”: " + fmt(L.titleMismatch) + "." }));
   if (L.count > 20000) summary.append(el("p", { class: "flag", text: "These entries are very broad, so the list reflects only the newest papers. Add an entry to narrow the field." }));
   if (L.cfg.design.id) summary.append(el("p", { text: fmt(L.designCount) + " of the " + fmt(L.count) + " matching papers fit the design you chose: " + L.cfg.design.label.charAt(0).toLowerCase() + L.cfg.design.label.slice(1) + ". People with papers of that design come first." }));
 
@@ -1515,9 +1514,6 @@ function render() {
   const few = L.minOwn === 1;
   const onWhat = few ? " on at least one of the matching papers" : " on at least two of the matching papers";
   if (few) summary.append(el("p", { class: "flag", text: "Only " + fmt(L.count) + " papers match, so the choice is narrow. The list includes people with one matching paper. Several entries may come from the same study." }));
-  const holds = (x, s) => x.label.toLowerCase().split(/[^\p{L}\p{N}]+/u).join(" ").includes(s.label.toLowerCase());   // Emergence Delirium, the words "delirium" or "delirium-like"
-  const lost = SETTINGS.startTerms.filter((s) => s.kind === "mesh" && !L.cfg.terms.some((x) => x.id === s.id || holds(x, s)));
-  if (lost.length && L.cfg.terms.every((x) => !x.label.toLowerCase().includes(lost[0].label.toLowerCase())) && !(L.dropped && lost.some((s) => L.dropped === termName(s)))) summary.append(el("p", { class: "flag", text: lost.map((s) => s.label).join(" and ") + " is not one of the entries, so the list may include people who do not work on " + lost.map((s) => s.label.toLowerCase()).join(" or ") + "." }));
   if (L.dropped) summary.append(el("p", { class: "flag", text: "You removed " + L.dropped + " to get enough papers. People on this list may have no paper on it." }));
   if (L.resolver.unsettled) summary.append(el("p", { class: "flag", text: "Many people have the same number of papers here, and the page stopped reading before the order was settled. Someone with as many papers as the last people shown may be missing. Add an entry to narrow the search." }));
   if (!shown.length && (missing.summaries || missing.records)) {
@@ -1864,6 +1860,7 @@ function searchRecord() {
     "Reviewer candidate search record",
     "Date: " + L.cfg.today,
     "Tool: Reviewer candidate finder (PubMed search, no manuscript content sent)",
+    "Required word in the publication title: delirium",
     "MeSH headings: " + (mesh.length ? mesh.join("; ") : "none"),
     "Exact words: " + (words.length ? words.join("; ") : "none"),
     "Study design: " + L.cfg.design.label,
@@ -1871,6 +1868,7 @@ function searchRecord() {
     "Period: last " + L.cfg.years + " years (from " + L.cfg.fromDate + ")",
     "Left out letters, editorials, comments, corrections, retracted papers and preprints: " + (L.cfg.exclude ? "yes" : "no"),
     "Papers matched: " + L.count + " (used: " + L.read + (L.cfg.exclude ? "; left out as replies, comments or corrections, by title: " + (L.leftOut || 0) : "") + ")",
+    "Records skipped because their own titles lack “delirium”: " + L.titleMismatch,
     "People listed: " + shownPeople().length,
     "People shortlisted: " + pickedPeople().length,
     "PubMed query: " + L.query
@@ -1965,7 +1963,7 @@ $("stopButton").addEventListener("keydown", (e) => { if (e.repeat) e.preventDefa
 $("stopButton").addEventListener("click", () => { if (!state.running || Date.now() - state.startedAt < 700) return; state.stopped = true; if (liveCtrl) liveCtrl.abort(); setStatus("Stopping."); });
 $("resetButton").addEventListener("click", () => {
   if (state.running || !mayClearShortlist("A new search")) return;
-  state.terms = startTerms(); state.dropNote = ""; $("termInput").value = ""; closeSuggestions(); setTermNote("");
+  state.terms = []; state.dropNote = ""; $("termInput").value = ""; closeSuggestions(); setTermNote("");
   $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
   $("conflictInput").value = "";
   clearResults(); renderChips(); setStatus("");
