@@ -90,6 +90,10 @@
   .journal { font-family: var(--serif); font-style: italic; color: #f3eafb; margin: 0; font-size: 0.94rem; }
   .mast h1 { color: #fff; font-size: clamp(1.45rem, 3.2vw, 2rem); letter-spacing: -0.01em; margin-top: 0.06rem; }
   .mast .deck { color: #f6effc; font-size: 0.92rem; margin: 0.12rem 0 0; max-width: 52rem; }
+  .quick-start { margin-top: 0.75rem; }
+  .quick-start h2 { font: 700 0.98rem var(--sans); color: var(--navy); }
+  .quick-start ol { margin: 0.2rem 0 0; padding-left: 1.35rem; font-size: 0.91rem; }
+  .quick-start li + li { margin-top: 0.15rem; }
 
   /* Compact confidentiality strip placed before input */
   .keepout {
@@ -403,6 +407,16 @@
     display: block;
   }
   .conflict-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.45rem; align-items: center; }
+  .conflict-scope {
+    background: var(--note-bg);
+    color: var(--note-ink);
+    border-left: 3px solid var(--note-ink);
+    padding: 0.45rem 0.65rem;
+    border-radius: 3px;
+    font-size: 0.88rem;
+    margin-top: 0.45rem;
+    max-width: none;
+  }
 
   .people { list-style: none; padding: 0; margin: 1.4rem 0 0; border-bottom: 1px solid var(--rule); }
   .people.is-stale { border-top: 3px solid var(--gold); }
@@ -446,6 +460,30 @@
   .papers { margin: 0.85rem 0 0; padding-left: 1.2rem; max-width: 46rem; font-size: 0.96rem; }
   .papers li { margin-top: 0.35rem; }
   .papers .where { color: var(--muted); }
+  .paper-tag {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.08rem 0.42rem;
+    border-radius: 3px;
+    margin-left: 0.35rem;
+    vertical-align: baseline;
+  }
+  .paper-tag.design { background: var(--ok-bg); color: var(--ok-ink); }
+  .paper-tag.protocol { background: var(--note-bg); color: var(--note-ink); }
+  .paper-tag.role { background: var(--tint); color: var(--navy); font-weight: 500; }
+  .leads-box {
+    margin-top: 1.1rem;
+    max-width: 48rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0.9rem 1.05rem;
+  }
+  .leads-box h3 { font-size: 1.15rem; color: var(--navy); }
+  .leads-box .hint { margin-top: 0.3rem; }
+  .leads-list { margin-top: 0.7rem; }
+  .lead-byline { color: var(--ink); font-size: 0.9rem; margin-top: 0.15rem; }
   details { margin-top: 0.55rem; }
   summary { cursor: pointer; color: var(--purple-deep); font-size: 0.95rem; }
   .allpapers { font-size: 0.94rem; }
@@ -547,7 +585,7 @@
   @media print {
     .mast { background: #fff; color: #000; border: 0; }
     .mast h1, .journal, .mast .deck { color: #000; }
-    .skip-link, .keepout, form, .how-works, .stale-banner, .actions, .tray, .pick, .more, #actionNote, #privacyNote, #namesNote, .conflict { display: none !important; }
+    .skip-link, .quick-start, .keepout, form, .how-works, .stale-banner, .actions, .tray, .pick, .more, #actionNote, #privacyNote, #namesNote, .conflict { display: none !important; }
     body.has-tray { padding-bottom: 0 !important; }
     .facts button { display: none !important; }
     .facts .cut { display: none; }
@@ -573,6 +611,15 @@
 
 <main class="wrap">
   <noscript><p class="stop">This page needs JavaScript. Turn it on in your browser settings and reload the page.</p></noscript>
+
+  <section class="quick-start" aria-labelledby="quickStartHead">
+    <h2 id="quickStartHead">How to use this tool</h2>
+    <ol>
+      <li>Choose a publication period. The default is the last two years. Add a topic if you want to narrow the search.</li>
+      <li>Select <strong>Find candidates</strong>. First or last authorship on one matching paper qualifies a candidate. All their matching papers count towards ranking.</li>
+      <li>Review the papers, check for conflicts of interest and shortlist candidates to invite.</li>
+    </ol>
+  </section>
 
   <section class="keepout" aria-labelledby="keepoutHead">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
@@ -622,19 +669,20 @@
       <div>
         <label class="field-label" for="yearsSelect">Publication period</label>
         <select id="yearsSelect">
+          <option value="2" selected>Last 2 years</option>
           <option value="3">Last 3 years</option>
-          <option value="5" selected>Last 5 years</option>
+          <option value="5">Last 5 years</option>
           <option value="10">Last 10 years</option>
         </select>
       </div>
       <div>
-        <label class="field-label" for="positionSelect">Author position</label>
-        <select id="positionSelect">
+        <label class="field-label" for="positionSelect">Required author position</label>
+        <select id="positionSelect" aria-describedby="positionHint">
           <option value="either" selected>First or last author</option>
-          <option value="first">First author only</option>
-          <option value="last">Last author only</option>
-          <option value="any">Any author</option>
+          <option value="first">First author</option>
+          <option value="last">Last author</option>
         </select>
+        <p class="micro-hint" id="positionHint">One matching paper in this position is required. Middle-author papers count towards ranking.</p>
       </div>
       <div>
         <label class="field-label" for="designSelect">Study design (ranks first)</label>
@@ -665,8 +713,8 @@
     <summary>How this PubMed search works (thresholds, ranking, privacy &amp; inviting reviewers)</summary>
     <ul>
       <li><strong>Mandatory title rule:</strong> Every search requires the word “delirium” in the published article’s title and checks returned titles locally so book-collection titles do not slip through.</li>
-      <li><strong>Minimum papers &amp; ranking:</strong> Searches stop with broadening options if fewer than 20 papers match. Searches with 20–49 papers include single-paper candidates with a warning; 50+ papers require at least two qualifying papers in your chosen author position. Up to 3,000 most recent papers are read.</li>
-      <li><strong>Topics &amp; study design:</strong> Up to 5 optional topics (at most 2 “Exact words” phrases) combine with AND. Study design ranks matching authors first without hiding other qualified authors.</li>
+      <li><strong>Minimum papers and ranking.</strong> With fewer than 20 PubMed hits, the tool shows papers to review. Ranked candidates need at least one matching paper as first, last or sole author, subject to the author position you select. All distinct papers matching the search count towards ranking. A selected study design takes priority. More papers in the required author position break ties. The search checks up to 3,000 of the most recent PubMed hits.</li>
+      <li><strong>Topics &amp; study design:</strong> Up to 5 optional topics (at most 2 “Exact words” phrases) combine with AND. Study design ranks matching authors first without hiding other qualified authors. <em>Randomised trial</em> ranking uses PubMed’s <code>Randomized Controlled Trial</code> publication type and excludes identifiable trial protocols, which are labelled separately when present.</li>
       <li><strong>Confidentiality &amp; inviting:</strong> Author conflict surnames stay strictly in this browser and are excluded from all copies and downloads. Handle reviewer checks and invitations separately in Scholastica.</li>
     </ul>
   </details>
@@ -698,9 +746,10 @@
           <h3 id="conflictHead">Check for possible conflicts (optional)</h3>
           <span class="local-pill">Browser only — never sent</span>
         </div>
+        <p class="conflict-scope" id="conflictScope"><strong>Limited check:</strong> Only checks listed matching delirium-title papers on this page. Off-topic co-authorships, older joint papers and shared institutions are not checked here and must be checked separately.</p>
         <label class="conflict-label" for="conflictInput">Manuscript author surnames (comma-separated)</label>
-        <p class="hint" id="conflictHint">For a common surname add an initial, as in Feng Y. Matches and co-authors are marked below. Stays in this browser and is left out of every copy and download.</p>
-        <textarea id="conflictInput" rows="2" autocomplete="off" spellcheck="false" aria-describedby="conflictHint" placeholder="For example: Okafor, Lindqvist, Tan"></textarea>
+        <p class="hint" id="conflictHint">For a common surname add an initial, as in Feng Y. Matches and co-authors within the listed papers are marked below. Stays in this browser and is left out of every copy and download.</p>
+        <textarea id="conflictInput" rows="2" autocomplete="off" spellcheck="false" aria-describedby="conflictScope conflictHint" placeholder="For example: Okafor, Lindqvist, Tan"></textarea>
         <div class="conflict-actions">
           <button type="button" class="secondary small-btn" id="conflictApplyButton">Apply check</button>
           <button type="button" class="plain small" id="conflictClearButton" hidden>Clear surnames</button>
@@ -714,12 +763,12 @@
 
     <div class="actions" id="actions" hidden>
       <button type="button" class="secondary" id="copyButton">Copy search record</button>
-      <button type="button" class="secondary" id="csvButton">Download full list CSV (no emails)</button>
+      <button type="button" class="secondary" id="csvButton">Download displayed candidates (CSV, no emails)</button>
       <a id="pubmedLink" target="_blank" rel="noopener noreferrer">Open this search in PubMed</a>
       <button type="button" class="plain" id="againButton">Clear results &amp; start new search</button>
     </div>
     <p class="hint" id="actionNote" role="status"></p>
-    <p class="hint" id="privacyNote" hidden>Names and addresses on this page are personal details from public PubMed records. Use them only to invite reviewers. The full list download leaves out email addresses. Copy shortlist and Shortlist CSV include email addresses. Delete downloaded files when you have finished.</p>
+    <p class="hint" id="privacyNote" hidden>Names and addresses on this page are personal details from public PubMed records. Use them only to invite reviewers. The displayed candidates CSV leaves out email addresses. Copy shortlist and Shortlist CSV include email addresses. Delete downloaded files when you have finished.</p>
     <p class="hint" id="namesNote" hidden>PubMed has no unique number for each author. The page separates people by surname and first name. Two people with the same full name can appear as one entry, so check the affiliation on each paper.</p>
   </section>
 </main>
@@ -754,7 +803,7 @@
 <footer>
 <div class="wrap"><div class="line">
   <p>Data come from PubMed and MeSH at the US National Library of Medicine. The NLM does not run or endorse this page.</p>
-  <p>Version 3.8 (Redesign candidate), November 2026.</p>
+  <p>Version 3.9, November 2026.</p>
 </div></div>
 </footer>
 
@@ -772,7 +821,7 @@ const SETTINGS = {
   fullPapers: 50,                // below this number the list is marked as short, and people with one matching paper are included
   maxPapersRead: 3000,           // the page reads at most this many of the most recent papers
   listSize: 20,                  // people shown at first, and added by "Show 20 more"
-  minOwnPapers: 2,               // papers in the chosen author position needed to qualify
+  minQualPapers: 1,              // minimum qualifying author-position papers needed for eligibility
   maxTerms: 5,                   // entries in total
   maxWordEntries: 2,             // of which exact word entries
   maxWordLength: 40              // characters in one exact word entry
@@ -781,7 +830,7 @@ const SETTINGS = {
 const DESIGNS = [
   { id: "", label: "Any design", query: "" },
   { id: "rct", label: "Randomised trial",
-    query: '(randomized controlled trial[Publication Type] OR "Randomized Controlled Trials as Topic"[MeSH Terms])' },
+    query: '(randomized controlled trial[Publication Type] NOT "clinical trial protocol"[Publication Type])' },
   { id: "obs", label: "Cohort or observational",
     query: '("Cohort Studies"[MeSH Terms] OR "Case-Control Studies"[MeSH Terms] OR "Cross-Sectional Studies"[MeSH Terms] OR observational study[Publication Type])' },
   { id: "dta", label: "Diagnostic accuracy",
@@ -812,6 +861,13 @@ const PERSONAL_MAIL = /@(gmail\.com|googlemail\.com|yahoo\.[a-z.]+|ymail\.com|ho
 // Replies, comments and corrections that PubMed has not labelled as such. They are left out with the letters and editorials.
 const NOT_A_PAPER = /^(?:(?:the )?authors?['’]?s?['’]? ?(?:response|reply|respond|replies)\b|(?:in )?reply(?:$|[:.,]| to\b| by\b| from\b| letter\b)|response to (?:the )?(?:letter|comment|commentary|editor|correspondence)\b|(?:correction|retraction)(?:$|[:.]| to\b| notice\b| note\b)|corrigend(?:um|a)\b|errat(?:um|a)\b|expression of concern\b|letter to the editor\b|editorial[:.]|comments? (?:on|to|about)\b|commentary(?:$|[:.]| on\b| about\b| to\b| response\b)|re:\s)/i;
 const ENDS_AS_REPLY = { test: (s) => /[:.]\s*(?:the\s+)?(?:authors?['’]?s?['’]?\s+)?(?:reply|response)\.?\s*$/i.test(s) || /\w[-\u2013\u2014]\s*(?:In\s+)?Reply\.?\s*$/.test(s) };
+const DELIRIUM_IN_TITLE = /(?:^|[^\p{L}\p{N}])delirium(?=$|[^\p{L}\p{N}])/iu;
+const PROTOCOL_PUBTYPE = /\b(?:clinical\s+trial|study|trial)\s+protocol\b/i;
+const PROTOCOL_TITLE = /\b(?:study|trial)\s+protocol\b|^\s*(?:a\s+|an\s+|the\s+)?protocol\s+(?:for|of)\b|\bprotocol\s+(?:for|of)\s+(?:a|an|the)\s+(?:[\w-]+\s+){0,6}(?:trial|rct|study)\b|[:.\-\u2013\u2014]\s*(?:a\s+|an\s+)?protocol(?:\s+(?:for|of)\b|\.?\s*$)|[\(\[]\s*(?:study\s+|trial\s+)?protocol\s*[\)\]]/i;
+function isTrialProtocol(title, pubtypes) {
+  if (Array.isArray(pubtypes) && pubtypes.some((t) => PROTOCOL_PUBTYPE.test(String(t)))) return true;
+  return PROTOCOL_TITLE.test(cleanTitle(title));
+}
 const REQUEST_GAP_MS = 550;      // NCBI allows three requests a second without a key; this keeps the page at two
 const REQUEST_TIMEOUT_MS = 30000;
 const LOOKUP_TIMEOUT_MS = 6000;
@@ -854,6 +910,11 @@ function cleanTitle(t) {
     .trim();
 }
 function newerFirst(a, b) { return a < b ? 1 : a > b ? -1 : 0; }
+function formatCutoff(sort, pubdate) {
+  const m = String(sort || "").match(/^(\d{4})\/(\d{2})\/(\d{2})/);
+  if (m) return m[1] + "-" + m[2] + "-" + m[3];
+  return String(pubdate || "").trim();
+}
 
 /* ------------------------------------------------------------------
    Calls to PubMed, spaced out and retried
@@ -1312,7 +1373,16 @@ function parseName(name) {
   const firstInitial = letters(initials)[0] || "";
   return { surnameNorm, firstInitial, key: surnameNorm + "|" + firstInitial };
 }
-function tally(papers, position, designIds, minOwn) {
+function posIsLead(pos) { return pos === "first" || pos === "last" || pos === "solo"; }
+function posQualifies(pos, position) {
+  if (position === "first") return pos === "first" || pos === "solo";
+  if (position === "last") return pos === "last" || pos === "solo";
+  return posIsLead(pos);
+}
+function roleRank(pos, position) {
+  return (posQualifies(pos, position) ? 4 : 0) + (pos === "solo" ? 3 : pos === "first" || pos === "last" ? 2 : 1);
+}
+function tally(papers, position, designIds) {
   const groups = new Map();
   const add = (paper, name, pos, idx) => {
     const pn = parseName(name);
@@ -1322,20 +1392,36 @@ function tally(papers, position, designIds, minOwn) {
     g.own.push({ paper, pos, idx });
   };
   for (const p of papers) {
-    if (position === "any") { p.all.forEach((name, i) => add(p, name, i === 0 ? "first" : i === p.all.length - 1 ? "last" : "middle", i)); continue; }
-    if (position !== "last" && p.first) add(p, p.first, "first", 0);
-    if (position !== "first" && p.last && (position === "last" || !p.solo)) add(p, p.last, "last", p.all.length - 1);
+    const n = p.all.length;
+    p.all.forEach((name, i) => {
+      const pos = n === 1 ? "solo" : i === 0 ? "first" : i === n - 1 ? "last" : "middle";
+      add(p, name, pos, i);
+    });
   }
   const qualifying = [];
   for (const g of groups.values()) {
-    const ids = new Set(g.own.map((o) => o.paper.pmid));
-    if (ids.size < minOwn) continue;
-    g.bound = ids.size;
-    g.dBound = designIds ? [...ids].filter((id) => designIds.has(id)).length : 0;
-    g.own.sort((a, b) => newerFirst(a.paper.sort, b.paper.sort));
+    const totalIds = new Set();
+    const qualIds = new Set();
+    for (const o of g.own) {
+      totalIds.add(o.paper.pmid);
+      if (posQualifies(o.pos, position)) qualIds.add(o.paper.pmid);
+    }
+    if (qualIds.size < SETTINGS.minQualPapers) continue;
+    g.bound = totalIds.size;
+    g.dBound = designIds ? [...totalIds].filter((id) => designIds.has(id)).length : 0;
+    g.lBound = qualIds.size;
+    g.newestSort = g.own.reduce((best, o) => (o.paper.sort > best ? o.paper.sort : best), "");
+    g.own.sort((a, b) =>
+      (designIds ? (designIds.has(b.paper.pmid) ? 1 : 0) - (designIds.has(a.paper.pmid) ? 1 : 0) : 0) ||
+      roleRank(b.pos, position) - roleRank(a.pos, position) ||
+      newerFirst(a.paper.sort, b.paper.sort));
     qualifying.push(g);
   }
-  qualifying.sort((a, b) => (designIds ? b.dBound - a.dBound : 0) || b.bound - a.bound || newerFirst(a.own[0].paper.sort, b.own[0].paper.sort));
+  qualifying.sort((a, b) =>
+    (designIds ? b.dBound - a.dBound : 0) ||
+    b.bound - a.bound ||
+    b.lBound - a.lBound ||
+    newerFirst(a.newestSort, b.newestSort));
   return qualifying;
 }
 
@@ -1428,13 +1514,13 @@ function atSamePlace(pool, it) {
   const at = pool.filter((c) => [...c.words].some((x) => w.has(x)));
   return at.length === 1 ? at[0] : null;
 }
-function clusterGroup(g) {
+function clusterGroup(g, position, designIds) {
   const items = [];
   for (const o of g.own) {
     const rec = records.get(o.paper.pmid);
     let node = null;
     if (rec && rec.authors.length) {
-      let edge = o.pos === "first" ? rec.authors[0] : o.pos === "last" ? rec.authors[rec.authors.length - 1] : rec.authors[o.idx];
+      let edge = (o.pos === "first" || o.pos === "solo") ? rec.authors[0] : o.pos === "last" ? rec.authors[rec.authors.length - 1] : rec.authors[o.idx];
       if (o.pos === "middle" && !(edge && nodeMatches(edge, g))) {
         const same = rec.authors.slice(1, -1).filter((a) => nodeMatches(a, g));
         edge = same.length === 1 ? same[0] : null;
@@ -1450,38 +1536,58 @@ function clusterGroup(g) {
   const clusters = [];
   const fits = (c, it) => {
     if (it.node.orcid && c.orcid && it.node.orcid !== c.orcid) return false;
+    if (c.items.some((x) => x.paper.pmid === it.paper.pmid && x.node && it.node && x.node !== it.node)) return false;
     const a = c.inits, b = letters(it.node.initials);
     if (a && b && !(a.startsWith(b) || b.startsWith(a))) return false;
     return namesCompatible(c.tokens, it.tokens);
   };
+  const itemCoKeys = (it) => {
+    const co = new Set();
+    const rec = records.get(it.paper.pmid);
+    if (rec) for (const a of rec.authors) if (a !== it.node) {
+      const fore = foreTokens(a.fore);
+      co.add(letters(a.last) + "|" + (fore.some((f) => f.length > 1) ? fore.join("") : letters(a.initials)));
+    }
+    return co;
+  };
+  const shareSet = (a, b) => { for (const v of a) if (b.has(v)) return true; return false; };
   const put = (c, it) => {
     c.items.push(it);
     instWords(it.node.affs).forEach((w) => c.words.add(w));
+    itemCoKeys(it).forEach((k) => c.co.add(k));
     if (it.node.orcid && !c.orcid) c.orcid = it.node.orcid;
     if (it.tokens.join("").length > c.tokens.join("").length) c.tokens = it.tokens;
     const b = letters(it.node.initials);
     if (b.length > c.inits.length) c.inits = b;
   };
   for (const it of full) {
-    let home = it.node.orcid ? clusters.find((c) => c.orcid === it.node.orcid) : null;
+    let home = it.node.orcid ? clusters.find((c) => c.orcid === it.node.orcid && fits(c, it)) : null;
     if (!home) {
       const homes = clusters.filter((c) => fits(c, it));
       const same = homes.filter((c) => c.tokens.join("") === it.tokens.join(""));
       home = same.length === 1 ? same[0] : same.find((c) => !c.orcid) || (!same.length && homes.length === 1 ? homes[0] : null);
       if (!home) home = atSamePlace(same.length ? same : homes, it);
     }
-    if (!home) { home = { tokens: it.tokens, orcid: "", inits: "", items: [], words: new Set(), initialsOnly: false }; clusters.push(home); }
+    if (!home) { home = { tokens: it.tokens, orcid: "", inits: "", items: [], words: new Set(), co: new Set(), initialsOnly: false }; clusters.push(home); }
     put(home, it);
   }
   for (const it of brief) {
-    const own = it.node.orcid ? clusters.filter((c) => c.orcid === it.node.orcid) : [];
+    const own = it.node.orcid ? clusters.filter((c) => c.orcid === it.node.orcid && fits(c, it)) : [];
+    if (own.length === 1) { put(own[0], it); continue; }
     const homes = own.length ? own : clusters.filter((c) => fits(c, it));
-    const at = homes.length > 1 ? atSamePlace(homes, it) : null;
-    if (homes.length === 1 || at) put(at || homes[0], it);
-    else if (homes.length === 0) { const c = { tokens: it.tokens, orcid: "", inits: "", items: [], words: new Set(), initialsOnly: true }; clusters.push(c); put(c, it); }
+    const iw = instWords(it.node.affs), ico = itemCoKeys(it);
+    const corroborated = homes.filter((c) => shareSet(c.words, iw) || shareSet(c.co, ico));
+    if (corroborated.length === 1) { put(corroborated[0], it); continue; }
+    const atCorr = corroborated.length > 1 ? atSamePlace(corroborated, it) : null;
+    if (atCorr) { put(atCorr, it); continue; }
+    const briefHomes = homes.filter((c) => c.initialsOnly && !(iw.size && c.words.size && !shareSet(c.words, iw)));
+    if (briefHomes.length === 1) { put(briefHomes[0], it); continue; }
+    const c = { tokens: it.tokens, orcid: "", inits: "", items: [], words: new Set(), co: new Set(), initialsOnly: true };
+    clusters.push(c);
+    put(c, it);
   }
   const unread = items.filter((i) => !i.fetched);
-  return clusters.map((c) => buildPerson(c, unread.length > 0, clusters.length >= 3));
+  return clusters.map((c) => buildPerson(c, unread.length > 0, clusters.length >= 3, position, designIds));
 }
 const AFF_COMMON = new Set(("department departments division section unit school faculty college university universitat universite universidad universita universitaet "
   + "hospital hospitals hospitalario clinic clinical center centre centro institute institution instituto medicine medical medicina sciences science research "
@@ -1517,17 +1623,31 @@ function instWords(affs) {
   for (const w of parts.join(" ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[^\p{L}]+/u)) if (w.length >= 3 && !AFF_COMMON.has(w)) words.add(w);
   return words;
 }
-function buildPerson(c, atLeast, crowded) {
-  const seen = new Set(), seenTitle = new Set();
+function buildPerson(c, atLeast, crowded, position, designIds) {
+  const seen = new Set(), byTitle = new Map(), items = [];
   const titleKey = (i) => String(i.paper.title || "").replace(/^\s*\[translated article\]\s*/i, "").normalize("NFD").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "")
     + "|" + (i.paper.all ? i.paper.all.length : 0);
-  const items = c.items.filter((i) => (seen.has(i.paper.pmid) ? false : (seen.add(i.paper.pmid), true)))
-    .sort((a, b) => newerFirst(a.paper.sort, b.paper.sort))
-    .filter((i) => {
-      const k = titleKey(i);
-      if (k.length < 24) return true;
-      return seenTitle.has(k) ? false : (seenTitle.add(k), true);
-    });
+  const preferItem = (a, b) =>
+    (designIds ? (designIds.has(b.paper.pmid) ? 1 : 0) - (designIds.has(a.paper.pmid) ? 1 : 0) : 0) ||
+    roleRank(b.pos, position) - roleRank(a.pos, position) ||
+    newerFirst(a.paper.sort, b.paper.sort);
+  const sortedByPmidPref = c.items.slice().sort(preferItem);
+  for (const i of sortedByPmidPref) {
+    if (seen.has(i.paper.pmid)) continue;
+    seen.add(i.paper.pmid);
+    const k = titleKey(i);
+    if (k.length < 24) { items.push(i); continue; }
+    if (!byTitle.has(k)) { byTitle.set(k, i); items.push(i); }
+    else {
+      const prev = byTitle.get(k);
+      if (preferItem(i, prev) < 0) {
+        const idx = items.indexOf(prev);
+        if (idx >= 0) items[idx] = i;
+        byTitle.set(k, i);
+      }
+    }
+  }
+  items.sort((a, b) => newerFirst(a.paper.sort, b.paper.sort));
   const withNode = items.filter((i) => i.node);
   const fullest = withNode.slice().sort((a, b) => (b.node.fore || "").length - (a.node.fore || "").length)[0];
   const latest = withNode[0];
@@ -1589,27 +1709,45 @@ function buildPerson(c, atLeast, crowded) {
       return " The " + list + " shown may belong to " + (shown.length > 1 ? "different people with this name." : "another person with this name.");
     })());
   const orcidFrom = c.orcid ? withNode.find((i) => i.node.orcid === c.orcid) || c.items.find((i) => i.node && i.node.orcid === c.orcid) : null;
+  const firstCount = items.filter((i) => i.pos === "first").length;
+  const lastCount = items.filter((i) => i.pos === "last").length;
+  const soloCount = items.filter((i) => i.pos === "solo").length;
+  const middleCount = items.filter((i) => i.pos === "middle").length;
+  const qualCount = items.filter((i) => posQualifies(i.pos, position)).length;
+  const designCount = designIds ? items.filter((i) => designIds.has(i.paper.pmid)).length : 0;
   return { id: 0, name, authorTerm, items, count: items.length, mixed, groups: sets.length, orcidPmid: orcidFrom ? orcidFrom.paper.pmid : "",
-           firstCount: items.filter((i) => i.pos === "first").length, lastCount: items.filter((i) => i.pos === "last").length,
-           middleCount: items.filter((i) => i.pos === "middle").length,
+           firstCount, lastCount, soloCount, middleCount, qualCount,
            surnameNorm: latest ? letters(latest.node.last) : "", surnameForms: latest ? surnameForms(latest.node.last) : new Set(), tokens: c.tokens.length ? c.tokens : c.inits.split(""), ownNodes: new Set(withNode.map((i) => i.node)),
            latestYear: items.length ? items[0].paper.year : "", orcid: c.orcid, affiliation, email,
-           initialsOnly: c.initialsOnly, crowded: crowded && !c.initialsOnly, atLeast, designCount: 0 };
+           initialsOnly: c.initialsOnly, crowded: crowded && !c.initialsOnly, atLeast, designCount };
 }
 function orderPeople(people, byDesign) {
   return people.slice().sort((a, b) =>
-    (byDesign ? b.designCount - a.designCount : 0) || b.count - a.count ||
-    newerFirst(a.items[0].paper.sort, b.items[0].paper.sort) || a.name.localeCompare(b.name));
+    (byDesign ? b.designCount - a.designCount : 0) ||
+    b.count - a.count ||
+    b.qualCount - a.qualCount ||
+    newerFirst(a.items[0].paper.sort, b.items[0].paper.sort) ||
+    a.name.localeCompare(b.name));
 }
-function makeResolver(groups, designIds, minOwn) {
-  const R = { groups, designIds, cursor: 0, people: [], nextId: 1 };
+function strictlyBeatsBound(cut, next, byDesign) {
+  if (byDesign) {
+    if (cut.designCount > next.dBound) return true;
+    if (cut.designCount < next.dBound) return false;
+  }
+  if (cut.count > next.bound) return true;
+  if (cut.count < next.bound) return false;
+  if (cut.qualCount > next.lBound) return true;
+  if (cut.qualCount < next.lBound) return false;
+  return next.newestSort < cut.items[0].paper.sort;
+}
+function makeResolver(groups, designIds, position) {
+  const R = { groups, designIds, position, cursor: 0, people: [], nextId: 1 };
   R.secure = (n) => {
     const next = groups[R.cursor];
     if (!next) return true;
     const cut = orderPeople(R.people, !!designIds)[n - 1];
     if (!cut) return false;
-    const settled = cut.count > next.bound || (cut.count === next.bound && next.own[0].paper.sort < cut.items[0].paper.sort);
-    return designIds ? cut.designCount > next.dBound || (cut.designCount === next.dBound && settled) : settled;
+    return strictlyBeatsBound(cut, next, !!designIds);
   };
   R.ensure = async (n, onProgress) => {
     let rounds = 0;
@@ -1623,10 +1761,9 @@ function makeResolver(groups, designIds, minOwn) {
         picked.forEach((id) => want.add(id));
       }
       await fetchRecords([...want], onProgress);
-      for (const g of batch) for (const p of clusterGroup(g)) {
-        if (p.count < minOwn || !p.name) continue;
+      for (const g of batch) for (const p of clusterGroup(g, position, designIds)) {
+        if (p.qualCount < SETTINGS.minQualPapers || p.count < 1 || !p.name) continue;
         p.id = R.nextId++;
-        if (designIds) p.designCount = p.items.filter((i) => designIds.has(i.paper.pmid)).length;
         R.people.push(p);
       }
       R.cursor += batch.length;
@@ -1680,7 +1817,7 @@ async function findFixes(cfg, least) {
     if (n >= least) fixes.push({ n, drops: true, label: "Search without " + termName(t) + " (" + fmt(n) + (n > 3000 ? " papers, a much wider topic)" : " papers)"),
       apply: () => { restoreForm(cfg); state.terms = cfg.terms.filter((x) => x.id !== t.id); state.dropNote = termName(t); renderChips(); } });
   }
-  const yearChoices = cfg.years < 5 ? [5, 10] : cfg.years < 10 ? [10] : [];
+  const yearChoices = [3, 5, 10].filter((y) => y > cfg.years);
   for (const y of yearChoices) {
     const n = await countFor(buildQuery(cfg, null, dateYearsAgo(y)));
     if (n >= least) fixes.push({ n, drops: false, label: "Search the last " + y + " years (" + fmt(n) + " papers)",
@@ -1713,13 +1850,70 @@ function printLineFor(cfg) {
   const topics = cfg.terms.length ? " Additional topics: " + cfg.terms.map(termName).join(", ") + "." : "";
   return "Searched: delirium in the title. Last " + cfg.years + " years. " + cfg.today + "." + topics;
 }
-async function showTooFew(count, cfg) {
+function formatByline(authors) {
+  if (!Array.isArray(authors) || !authors.length) return "";
+  if (authors.length <= 8) return authors.join(", ");
+  return authors.slice(0, 5).join(", ") + ", … , " + authors[authors.length - 1] + " (" + authors.length + " authors)";
+}
+function extractSummaryBase(uid, x) {
+  if (!x || x.error || !/^\d+$/.test(String(uid))) return null;
+  const rawAuthors = Array.isArray(x.authors) ? x.authors : [];
+  const persons = rawAuthors.filter((a) => a && a.authtype === "Author" && a.name).map((a) => a.name);
+  const anyAuthors = persons.length ? persons : rawAuthors.filter((a) => a && a.name).map((a) => a.name);
+  const sort = x.sortpubdate || "";
+  const pubdate = String(x.pubdate || "");
+  const title = cleanTitle(x.title);
+  const yearMatch = (sort.match(/\b(19|20)\d{2}\b/) || pubdate.match(/\b(19|20)\d{2}\b/));
+  const pubtypes = Array.isArray(x.pubtype) ? x.pubtype : [];
+  return {
+    pmid: String(uid), title, source: x.source || "", sort, pubdate,
+    year: yearMatch ? yearMatch[0] : "", persons, anyAuthors, pubtypes,
+    isProtocol: isTrialProtocol(title, pubtypes)
+  };
+}
+async function showTooFew(count, cfg, leadInfo) {
   $("printLine").textContent = printLineFor(cfg);
   $("summary").append(stopBox(
     count === 0 ? "PubMed has no papers that match." : "PubMed has only " + fmt(count) + (count === 1 ? " paper that matches." : " papers that match."),
-    "The page needs at least " + SETTINGS.minPapers + "." + (count > 0 ? " With fewer, the list is too narrow to choose from, and the papers may all come from one study." : ""),
+    "Candidate ranking starts at " + SETTINGS.minPapers + " PubMed hits." + (count > 0 ? " You can review the papers below to find possible reviewers." : ""),
     cfg.terms.length ? "Each paper must match every topic, so you can try removing a topic." : null,
-    count === 1 ? "You can still open this paper in PubMed with the link below." : count > 1 ? "You can still open these papers in PubMed with the link below and choose from them yourself." : null));
+    count === 1 ? "You can open this paper below or view the search in PubMed." : count > 1 ? "You can open these papers below or view the search in PubMed." : null));
+  if (count > 0 && leadInfo) {
+    const box = el("div", { class: "leads-box" });
+    if (leadInfo.unavailable) {
+      box.append(el("p", { class: "flag", text: "PubMed did not send the paper summaries for these " + fmt(count) + " hits, so individual titles and authors could not be listed here. Use “Open this search in PubMed” below or try a wider search." }));
+    } else {
+      const leads = leadInfo.papers || [];
+      if (!leads.length) {
+        const skipped = [];
+        if (leadInfo.titleMismatch) skipped.push(fmt(leadInfo.titleMismatch) + " lacked “delirium” in the title");
+        if (leadInfo.leftOut) skipped.push(fmt(leadInfo.leftOut) + " looked like a reply, comment or correction");
+        box.append(el("p", { class: "flag", text: skipped.length
+          ? "PubMed returned " + fmt(count) + (count === 1 ? " hit, but none" : " hits, but none") + " passed local checks (" + skipped.join("; ") + ")."
+          : "PubMed returned " + fmt(count) + (count === 1 ? " hit" : " hits") + ", but summary records were unavailable." }));
+      } else {
+        box.append(el("h3", { id: "leadsHead", text: "Unranked paper " + (leads.length === 1 ? "lead" : "leads") + " (" + fmt(leads.length) + ")" }));
+        box.append(el("p", { class: "hint", text: "Shown unranked in PubMed date order with available bylines (no candidate scores). Check whether any author fits your topic and lacks conflicts." }));
+        if (leadInfo.titleMismatch || leadInfo.leftOut || leadInfo.missing) {
+          const notes = [];
+          if (leadInfo.titleMismatch) notes.push(fmt(leadInfo.titleMismatch) + " skipped (title lacks “delirium”)");
+          if (leadInfo.leftOut) notes.push(fmt(leadInfo.leftOut) + " left out as reply, comment or correction");
+          if (leadInfo.missing) notes.push(fmt(leadInfo.missing) + " summary unavailable from PubMed");
+          box.append(el("p", { class: "hint", text: "Local summary check: " + notes.join("; ") + "." }));
+        }
+        const ul = el("ul", { class: "papers leads-list" });
+        leads.forEach((p) => {
+          const li = el("li", null, link(PUBMED + p.pmid + "/", p.title || "Untitled record"));
+          if (p.isProtocol) li.append(" ", el("span", { class: "paper-tag protocol", text: "Trial protocol" }));
+          li.append(" ", el("span", { class: "where", text: [p.source, p.year].filter(Boolean).join(", ") + ". PMID " + p.pmid }));
+          li.append(el("div", { class: "lead-byline", text: formatByline(p.byline) || "Authors not listed in PubMed summary." }));
+          ul.append(li);
+        });
+        box.append(ul);
+      }
+    }
+    $("summary").append(box);
+  }
   $("results").hidden = false;
   setStatus("Checking which change would help.");
   let fixes = null;
@@ -1764,7 +1958,43 @@ async function run(asked) {
     missing.summaries = 0; missing.records = 0;
 
     if (count < SETTINGS.minPapers) {
-      await showTooFew(count, cfg);
+      let leadInfo = null;
+      if (count > 0) {
+        leadInfo = { unavailable: false, papers: [], titleMismatch: 0, leftOut: 0, missing: 0 };
+        setStatus("Reading " + fmt(count) + " matching " + (count === 1 ? "summary" : "summaries") + "."); setProgress(0.35);
+        try {
+          const full = (d) => !!(d && d.result && Array.isArray(d.result.uids));
+          let sm = null;
+          for (let tries = 0; tries < 3; tries++) {
+            sm = await eutils("esummary.fcgi", { db: "pubmed", retmode: "json", version: "2.0", query_key: r.querykey, WebEnv: r.webenv,
+              retstart: "0", retmax: String(count) }, { check: full });
+            const got = sm.result.uids.filter((u) => sm.result[u] && !sm.result[u].error).length;
+            if (got >= count) break;
+            await pause(1500);
+          }
+          const res = (sm && sm.result) || {};
+          const uids = res.uids || [];
+          const gotValid = uids.filter((u) => res[u] && !res[u].error).length;
+          leadInfo.missing = Math.max(0, count - gotValid);
+          for (const uid of uids) {
+            const base = extractSummaryBase(uid, res[uid]);
+            if (!base) continue;
+            if (!DELIRIUM_IN_TITLE.test(base.title)) { leadInfo.titleMismatch++; continue; }
+            if (cfg.exclude && (NOT_A_PAPER.test(base.title.replace(/^[\s\[("“]+/, "")) || ENDS_AS_REPLY.test(base.title))) { leadInfo.leftOut++; continue; }
+            leadInfo.papers.push({
+              pmid: base.pmid, title: base.title, source: base.source, sort: base.sort, year: base.year,
+              byline: base.anyAuthors, isProtocol: base.isProtocol
+            });
+          }
+          leadInfo.papers.sort((a, b) => newerFirst(a.sort, b.sort));
+          if (!gotValid) leadInfo.unavailable = true;
+        } catch (err) {
+          if (err && err.message === "stopped") throw err;
+          leadInfo.unavailable = true;
+          leadInfo.missing = count;
+        }
+      }
+      await showTooFew(count, cfg, leadInfo);
       if (count > 0) { $("pubmedLink").href = pubmedUrl; $("copyButton").hidden = true; $("csvButton").hidden = true; $("actions").hidden = false; }
       setStatus(""); setProgress(null); toResults();
       return;
@@ -1783,6 +2013,7 @@ async function run(asked) {
     const papers = [];
     let leftOut = 0;
     let titleMismatch = 0;
+    let oldestSort = "", oldestPubDate = "";
     for (let start = 0; start < toRead; start += SUMMARY_BATCH) {
       const done = Math.min(start + SUMMARY_BATCH, toRead);
       setStatus("Reading papers: " + fmt(done) + " of " + fmt(toRead) + "."); setProgress(0.1 + 0.5 * (start / toRead));
@@ -1799,29 +2030,34 @@ async function run(asked) {
       const res = (sm && sm.result) || {};
       missing.summaries += Math.max(0, want - (res.uids || []).filter((u) => res[u] && !res[u].error).length);
       for (const uid of res.uids || []) {
-        const x = res[uid];
-        if (!x || x.error || !Array.isArray(x.authors) || !/^\d+$/.test(String(uid))) continue;
-        const persons = x.authors.filter((a) => a && a.authtype === "Author" && a.name).map((a) => a.name);
-        if (!persons.length) continue;
-        const sort = x.sortpubdate || "";
-        const title = cleanTitle(x.title);
-        if (!/(?:^|[^\p{L}\p{N}])delirium(?=$|[^\p{L}\p{N}])/iu.test(title)) { titleMismatch++; continue; }
-        if (cfg.exclude && (NOT_A_PAPER.test(title.replace(/^[\s\[("“]+/, "")) || ENDS_AS_REPLY.test(title))) { leftOut++; continue; }
-        const yearMatch = (sort.match(/\b(19|20)\d{2}\b/) || String(x.pubdate || "").match(/\b(19|20)\d{2}\b/));
-        papers.push({ pmid: String(uid), title, source: x.source || "", sort, year: yearMatch ? yearMatch[0] : "",
-                      first: persons[0], last: persons[persons.length - 1], solo: persons.length === 1, all: persons });
+        const base = extractSummaryBase(uid, res[uid]);
+        if (!base) continue;
+        if (base.sort && (!oldestSort || base.sort < oldestSort)) { oldestSort = base.sort; oldestPubDate = base.pubdate; }
+        if (!base.persons.length) continue;
+        if (!DELIRIUM_IN_TITLE.test(base.title)) { titleMismatch++; continue; }
+        if (cfg.exclude && (NOT_A_PAPER.test(base.title.replace(/^[\s\[("“]+/, "")) || ENDS_AS_REPLY.test(base.title))) { leftOut++; continue; }
+        papers.push({ pmid: base.pmid, title: base.title, source: base.source, sort: base.sort, year: base.year,
+                      first: base.persons[0], last: base.persons[base.persons.length - 1], solo: base.persons.length === 1,
+                      all: base.persons, isProtocol: base.isProtocol, pubtypes: base.pubtypes });
       }
     }
 
-    const minOwn = count < SETTINGS.fullPapers ? 1 : SETTINGS.minOwnPapers;
-    const groups = tally(papers, cfg.position, designIds, minOwn);
+    let protocolExcluded = 0;
+    if (cfg.design.id === "rct" && designIds) {
+      for (const p of papers) {
+        if (p.isProtocol && designIds.delete(p.pmid)) protocolExcluded++;
+      }
+    }
+    const checkedDesignCount = designIds ? papers.filter((p) => designIds.has(p.pmid)).length : 0;
+    const oldestChecked = formatCutoff(oldestSort, oldestPubDate);
+    const groups = tally(papers, cfg.position, designIds);
     setStatus("Checking names against the full records."); setProgress(0.62);
-    const resolver = makeResolver(groups, designIds, minOwn);
+    const resolver = makeResolver(groups, designIds, cfg.position);
     await resolver.ensure(SETTINGS.listSize, (done, total) => {
       setStatus("Checking names against the full records: " + fmt(done) + " of " + fmt(total) + "."); setProgress(0.62 + 0.35 * (done / total));
     });
 
-    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, leftOut, titleMismatch, designCount, resolver, minOwn, sig, dropped, fixes: [] };
+    state.last = { cfg, query, pubmedUrl, count, read: papers.length, toRead, oldestChecked, leftOut, titleMismatch, designIds, designCount, checkedDesignCount, protocolExcluded, resolver, narrowPool: count < SETTINGS.fullPapers, sig, dropped, fixes: [] };
     if (resolver.cursor >= groups.length && resolver.people.length < 5) {
       setStatus("Checking which change would help.");
       try { state.last.fixes = (await findFixes(cfg, Math.max(SETTINGS.fullPapers, count * 2))).slice(0, 3); }
@@ -1887,14 +2123,17 @@ async function showMore() {
 function allPeople() { const L = state.last; return orderPeople(L.resolver.people, !!L.cfg.design.id); }
 function shownPeople() { return allPeople().slice(0, state.shown); }
 function pickedPeople() { return allPeople().filter((p) => state.picked.has(p.id)); }
-function positionWords(cfg) { return cfg.position === "first" ? "first author" : cfg.position === "last" ? "last author" : cfg.position === "any" ? "listed as an author" : "first or last author"; }
+function eligibilityPhrase(cfg) {
+  return cfg.position === "first" ? "at least one matching paper as first author"
+    : cfg.position === "last" ? "at least one matching paper as last author"
+    : "at least one matching paper as first or last author";
+}
 
 function widerAdvice(cfg) {
   const ways = [];
   if (cfg.terms.length) ways.push("remove a topic");
   if (cfg.years < 10) ways.push("choose a longer period");
   if (cfg.position === "first" || cfg.position === "last") ways.push("choose “First or last author”");
-  else if (cfg.position === "either") ways.push("choose “Any author”");
   if (!ways.length) ways.push("open the search in PubMed");
   const s = ways.length > 1 ? ways.slice(0, -1).join(", ") + " or " + ways[ways.length - 1] : ways[0];
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -1907,8 +2146,7 @@ function render() {
 
   const total = L.resolver.people.length + (L.resolver.groups.length - L.resolver.cursor);
   const exact = L.resolver.cursor >= L.resolver.groups.length;
-  const few = L.minOwn === 1;
-  const onWhat = few ? " on at least one of the matching papers" : " on at least two of the matching papers";
+  const capped = L.count > L.toRead;
 
   const notes = linkNotes(shown);
   state.notes = notes;
@@ -1924,14 +2162,23 @@ function render() {
     const bar = el("div", { class: "stats-bar" });
     const addStat = (val, lbl) => bar.append(el("div", { class: "stat" }, el("span", { class: "stat-val", text: val }), el("span", { class: "stat-lbl", text: lbl })));
     addStat(fmt(L.count), "PubMed hits");
-    addStat((exact ? "" : "~") + fmt(total), "Qualifying authors");
+    if (capped) addStat(fmt(L.toRead), "Most recent checked");
+    addStat((exact ? "" : "~") + fmt(total), capped ? "Eligible authors (checked)" : "Eligible authors");
     addStat(fmt(shown.length), "Candidates shown");
     if (shown.length > 0) addStat(fmt(groupCount), groupCount === 1 ? "Co-author group" : "Co-author groups");
     summary.append(bar);
   }
 
-  let first = "PubMed found " + fmt(L.count) + " papers matching the title, dates and other search settings.";
-  if (L.count > L.toRead) first += " The page read the most recent " + fmt(L.toRead) + ".";
+  if (capped) {
+    summary.append(el("p", {
+      class: "flag",
+      text: "Drawn only from the most recent " + fmt(L.toRead) + " of " + fmt(L.count) + " PubMed hits checked" +
+        (L.oldestChecked ? " (earliest inspected publication date: " + L.oldestChecked + "; older matching papers were not checked)" : " (older matching papers were not checked)") +
+        ". Ranking reflects only those " + fmt(L.toRead) + " checked papers, not the full " + fmt(L.count) + " PubMed hits. Add a topic or shorten the period to inspect all matching papers."
+    }));
+  }
+
+  let first = "PubMed found " + fmt(L.count) + " matching papers." + (capped ? " Only the most recent " + fmt(L.toRead) + " records were inspected" + (L.oldestChecked ? " (cutoff date " + L.oldestChecked + ")" : "") + ", leaving " + fmt(L.read) + " papers after local title and exclusion checks." : " Kept " + fmt(L.read) + " after local checks.");
   if (missing.summaries || missing.records) {
     const flag = el("p", { class: "flag" },
       "PubMed did not send " + (missing.summaries ? fmt(missing.summaries) + " of the paper summaries" : "") + (missing.summaries && missing.records ? " and " : "") + (missing.records ? fmt(missing.records) + " of the full records" : "") + ", so some counts may be low. ");
@@ -1940,33 +2187,54 @@ function render() {
     flag.append(again);
     summary.append(flag);
   }
-  if (L.leftOut) first += " The page left out " + L.leftOut + (L.leftOut === 1 ? " paper that is a reply, a comment or a correction, judged by its title." : " papers that are replies, comments or corrections, judged by their titles.");
+  if (L.leftOut) first += " Left out " + L.leftOut + (L.leftOut === 1 ? " paper that is a reply, comment or correction, judged by its title." : " papers that are replies, comments or corrections, judged by their titles.");
   summary.append(el("p", { text: first }));
   if (L.titleMismatch) summary.append(el("p", { text: "Records skipped because their own titles lack the word “delirium”: " + fmt(L.titleMismatch) + "." }));
   if (L.count > 20000) summary.append(el("p", { class: "flag", text: "These entries are very broad, so the list reflects only the newest papers. Add an entry to narrow the field." }));
-  if (L.cfg.design.id) summary.append(el("p", { text: fmt(L.designCount) + " of the " + fmt(L.count) + " matching papers fit the design you chose (" + L.cfg.design.label.toLowerCase() + "). People with papers of that design come first." }));
+  if (L.cfg.design.id) {
+    if (L.cfg.design.id === "rct") {
+      let msg = fmt(L.checkedDesignCount) + " of the " + fmt(L.read) + (capped ? " kept checked" : " matching") + " papers carry PubMed’s Randomized Controlled Trial publication type (identifiable protocols excluded).";
+      if (capped) msg += " Overall PubMed hits matching that publication-type query before local checks: " + fmt(L.designCount) + " of " + fmt(L.count) + ".";
+      if (L.protocolExcluded) msg += " Excluded " + fmt(L.protocolExcluded) + (L.protocolExcluded === 1 ? " trial protocol" : " trial protocols") + " from trial ranking.";
+      msg += " Authors with those papers rank first; confirm completion and design in the paper itself, as PubMed indexing is citation-based.";
+      summary.append(el("p", { text: msg }));
+    } else {
+      let msg = fmt(L.checkedDesignCount) + " of the " + fmt(L.read) + (capped ? " kept checked" : " matching") + " papers fit the design you chose (" + L.cfg.design.label.toLowerCase() + ").";
+      if (capped) msg += " Overall PubMed hits for that design query before local checks: " + fmt(L.designCount) + " of " + fmt(L.count) + ".";
+      msg += " People with papers of that design rank first.";
+      summary.append(el("p", { text: msg }));
+    }
+  }
 
-  if (few) summary.append(el("p", { class: "flag", text: "Only " + fmt(L.count) + " papers match, so the choice is narrow. The list includes people with one matching paper. Several entries may come from the same study." }));
+  if (L.narrowPool) summary.append(el("p", { class: "flag", text: "Only " + fmt(L.count) + " papers match, so the pool is narrow and several entries may come from the same study." }));
   if (L.dropped) summary.append(el("p", { class: "flag", text: "You removed " + L.dropped + " to get enough papers. People on this list may have no paper on it." }));
-  if (L.resolver.unsettled) summary.append(el("p", { class: "flag", text: "Many people have the same number of papers here, and the page stopped reading before the order was settled. Someone with as many papers as the last people shown may be missing. Add an entry to narrow the search." }));
+  if (L.resolver.unsettled) summary.append(el("p", { class: "flag", text: "Many people have the same counts here, and the page stopped reading before the order was settled. Someone with as many papers as the last people shown may be missing. Add an entry to narrow the search." }));
 
   if (!shown.length && (missing.summaries || missing.records)) {
     summary.append(stopBox("PubMed did not send the records this list needs.", "Wait a minute and search again."));
   } else if (!shown.length && L.read === 0) {
     summary.append(stopBox("PubMed returned " + fmt(L.count) + " records, but none remained after checking titles for “delirium”" + (L.cfg.exclude ? " and leaving out replies, comments or corrections." : "."), widerAdvice(L.cfg) + "."));
   } else if (!shown.length) {
-    summary.append(stopBox("Nobody is " + positionWords(L.cfg) + (few ? " on these papers." : " on two or more of these papers."), widerAdvice(L.cfg) + "."));
-  } else if (exact && total < SETTINGS.listSize) {
-    summary.append(el("p", { text: "Only " + total + (total === 1 ? " person is " : " people are ") + positionWords(L.cfg) + onWhat + ", so the list is shorter than " + SETTINGS.listSize + ". To see more, " + widerAdvice(L.cfg).charAt(0).toLowerCase() + widerAdvice(L.cfg).slice(1) + "." }));
+    summary.append(stopBox("Nobody qualifies under “" + eligibilityPhrase(L.cfg) + "” in these " + (capped ? "checked " : "") + "papers.", widerAdvice(L.cfg) + "."));
   } else {
-    summary.append(el("p", { text: (exact ? "" : "About ") + fmt(total) + " people are " + positionWords(L.cfg) + onWhat + ". The list shows " + (exact && shown.length === total ? "all " : "the top ") + shown.length + "." }));
+    const rankDesc = (L.cfg.design.id ? "active study-design matches first, then " : "") +
+      "total distinct matching papers, including middle-author papers. More papers in the required author position break ties";
+    summary.append(el("p", {
+      text: (exact ? "" : "About ") + fmt(total) + " " + (total === 1 ? "person qualifies" : "people qualify") +
+        (capped ? " within the " + fmt(L.read) + " checked papers" : "") +
+        " (" + eligibilityPhrase(L.cfg) + "). Showing " +
+        (exact && shown.length === total ? "all " : "the top ") + shown.length +
+        ", ranked by " + rankDesc + "."
+    }));
   }
 
   if (L.fixes && L.fixes.length) summary.append(fixBox(L.fixes, "Few people qualify. " + (L.fixes.length === 1 ? "This change would find more." : "Any one of these changes would find more.")));
   $("pubmedLink").href = L.pubmedUrl;
   $("actions").hidden = false;
   $("copyButton").hidden = false;
-  $("csvButton").hidden = !shown.length;
+  const csvBtn = $("csvButton");
+  csvBtn.hidden = !shown.length;
+  csvBtn.textContent = "Download " + fmt(shown.length) + " displayed " + (shown.length === 1 ? "candidate" : "candidates") + " (CSV, no emails)";
   $("privacyNote").hidden = !shown.length;
   $("namesNote").hidden = !shown.length;
   $("printLine").textContent = printLineFor(L.cfg);
@@ -1980,7 +2248,7 @@ function render() {
   const upper = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const conflictText = !notes.names.length ? "" : notes.names.map((n) => {
     const self = numbers(n.self), co = numbers(n.co);
-    if (!self.length && !co.length) return n.typed + ": no match.";
+    if (!self.length && !co.length) return n.typed + ": No match in the papers checked. Check other publications and affiliations separately.";
     let s = n.typed + ": ";
     const both = co.filter((i) => self.includes(i)), others = co.filter((i) => !self.includes(i));
     if (self.length) s += listOf(self) + (self.length === 1 ? " has" : " have") + " this surname.";
@@ -1988,7 +2256,7 @@ function render() {
     if (others.length) s += (self.length ? " " + upper(listOf(others)) : listOf(others)) + (others.length === 1 ? " shares" : " share") + " a listed paper with an author of this surname.";
     if (n.open && n.inits.size >= 2 && new Set(self.concat(co)).size >= 3) s += " This surname covers several people here. To narrow the check, type the surname and an initial, as in Feng Y.";
     return s;
-  }).join("\n") + "\nThe check uses only the papers listed here. Check other connections yourself, such as other joint work or the same institution.";
+  }).join("\n") + "\nScope: checked only against the matching delirium-title papers listed on this page. Off-topic co-authorships, older joint papers and affiliations are not checked here and must be checked separately.";
   if ($("conflictNote").textContent !== conflictText) $("conflictNote").textContent = conflictText;
   if (shown.length > 2 && groupCount < shown.length) summary.append(el("p", { text: "Some of these people have written listed papers together. Counting each set of co-authors once, the " + shown.length + " people shown come from " + groupCount + (groupCount === 1 ? " group" : " separate groups") + ". Two reviewers from one group may give the same view." }));
 
@@ -2007,21 +2275,33 @@ function render() {
   checkStale();
   updateTray();
 }
-function paperItem(it) {
+function paperItem(it, L) {
   const p = it.paper;
-  return el("li", null, link(PUBMED + p.pmid + "/", p.title || "Untitled record"), " ",
-    el("span", { class: "where", text: [p.source, p.year].filter(Boolean).join(", ") + ". PMID " + p.pmid }));
+  const roleText = it.pos === "solo" ? "sole author" : it.pos === "first" ? "first author" : it.pos === "last" ? "last author" : "middle author";
+  const li = el("li", null, link(PUBMED + p.pmid + "/", p.title || "Untitled record"));
+  if (L && L.cfg.design.id && L.designIds && L.designIds.has(p.pmid)) {
+    li.append(" ", el("span", { class: "paper-tag design", text: L.cfg.design.id === "rct" ? "Ranked: RCT pub. type" : "Ranked: " + L.cfg.design.label.toLowerCase() }));
+  }
+  if (p.isProtocol) li.append(" ", el("span", { class: "paper-tag protocol", text: "Trial protocol" }));
+  li.append(" ", el("span", { class: "paper-tag role", text: roleText }));
+  li.append(" ", el("span", { class: "where", text: [p.source, p.year].filter(Boolean).join(", ") + ". PMID " + p.pmid }));
+  return li;
 }
 function countLine(p, L) {
   const parts = [];
   if (p.firstCount) parts.push("first author on " + p.firstCount);
   if (p.lastCount) parts.push("last author on " + p.lastCount);
+  if (p.soloCount) parts.push("sole author on " + p.soloCount);
   if (p.middleCount) parts.push("middle author on " + p.middleCount);
   let s = parts.length > 2 ? parts.slice(0, -1).join(", ") + " and " + parts[parts.length - 1] : parts.join(" and ");
-  s = (p.atLeast ? "At least " : "") + p.count + " matching " + papersWord(p.count) + ": " + s + ".";
+  s = (p.atLeast ? "At least " : "") + p.count + " distinct matching " + papersWord(p.count) + " (" + s + ").";
   const old = Number(L.cfg.today.slice(0, 4)) - 3;
-  if (p.latestYear) s += " The latest matching paper is from " + p.latestYear + (Number(p.latestYear) <= old ? ", so check that this person still works in the field." : ".");
-  if (L.cfg.design.id) s += " " + p.designCount + (p.designCount === 1 ? " fits" : " fit") + " the design you chose.";
+  if (p.latestYear) s += " Latest matching paper: " + p.latestYear + (Number(p.latestYear) <= old ? " — check whether this person still works in the field." : ".");
+  if (L.cfg.design.id) {
+    s += L.cfg.design.id === "rct"
+      ? " " + p.designCount + (p.designCount === 1 ? " paper carries" : " papers carry") + " PubMed’s randomised trial publication type (protocols excluded)."
+      : " " + p.designCount + (p.designCount === 1 ? " fits" : " fit") + " the design you chose.";
+  }
   return s;
 }
 function sameAuthor(a, p) {
@@ -2171,10 +2451,18 @@ function personEntry(p, rank, L, note) {
   body.append(el("div", { class: "head" }, el("h3", { text: p.name }), pickLabel));
 
   const pills = el("div", { class: "meta-pills" });
-  pills.append(el("span", { class: "meta-pill", text: (p.atLeast ? "\u2265" : "") + p.count + " " + papersWord(p.count) }));
+  pills.append(el("span", { class: "meta-pill", text: (p.atLeast ? "\u2265" : "") + p.count + " matching " + papersWord(p.count) }));
+  if (L.cfg.position !== "any") {
+    const qLabel = L.cfg.position === "first" ? p.qualCount + " first"
+      : L.cfg.position === "last" ? p.qualCount + " last"
+      : p.qualCount + " first/last";
+    pills.append(el("span", { class: "meta-pill", text: qLabel }));
+  }
   if (p.latestYear) pills.append(el("span", { class: "meta-pill", text: "Latest " + p.latestYear }));
-  if (L.cfg.design.id && p.designCount > 0) pills.append(el("span", { class: "meta-pill design", text: p.designCount + " " + L.cfg.design.label.toLowerCase() }));
-  if (L.minOwn === 1 && p.count === 1) pills.append(el("span", { class: "tag", text: "One matching paper" }));
+  if (L.cfg.design.id && p.designCount > 0) {
+    pills.append(el("span", { class: "meta-pill design", text: L.cfg.design.id === "rct" ? p.designCount + " RCT pub. type" : p.designCount + " " + L.cfg.design.label.toLowerCase() }));
+  }
+  if (p.count === 1) pills.append(el("span", { class: "tag", text: "One matching paper" }));
   body.append(pills);
 
   body.append(el("p", { class: "count", text: countLine(p, L) }));
@@ -2229,13 +2517,16 @@ function personEntry(p, rank, L, note) {
   if (p.initialsOnly) body.append(el("p", { class: "flag", text: "Check this name. PubMed gives initials only for these papers, so this entry may combine more than one person." }));
   else if (p.crowded) body.append(el("p", { class: "flag", text: "Several people in this search share this surname and first initial. Check the affiliation on each paper." }));
 
-  const head = p.items.slice(0, 2), rest = p.items.slice(2);
+  const orderedItems = (L.cfg.design.id && L.designIds && p.designCount > 0)
+    ? p.items.slice().sort((a, b) => (L.designIds.has(b.paper.pmid) ? 1 : 0) - (L.designIds.has(a.paper.pmid) ? 1 : 0) || newerFirst(a.paper.sort, b.paper.sort))
+    : p.items;
+  const head = orderedItems.slice(0, 2), rest = orderedItems.slice(2);
   const papers = el("ul", { class: "papers" });
-  head.forEach((it) => papers.append(paperItem(it)));
+  head.forEach((it) => papers.append(paperItem(it, L)));
   body.append(papers);
   if (rest.length) {
     const more = el("ul", { class: "papers" });
-    rest.forEach((it) => more.append(paperItem(it)));
+    rest.forEach((it) => more.append(paperItem(it, L)));
     body.append(el("details", null, el("summary", { text: "Show " + rest.length + " more", "aria-label": "Show " + rest.length + " more papers by " + p.name }), more));
   }
   if (p.authorTerm) {
@@ -2326,18 +2617,27 @@ function updateTray() {
   else $("trayList").replaceChildren();
 }
 function shortlistText() {
-  return pickedPeople().map((p) => [
-    p.name,
-    p.affiliation ? p.affiliation.text + " (PubMed record " + p.affiliation.pmid + (p.affiliation.year ? ", " + p.affiliation.year : "") + ")" : "Affiliation: none printed",
-    p.email ? "Email: " + p.email.addresses.join(", ") + " (printed on PubMed record " + p.email.pmid + (p.email.year ? ", " + p.email.year : "") + (p.email.elsewhere ? "; that paper names a different institution, so check it" : "") + ")" : "Email: none printed",
-    p.orcid ? "ORCID: https://orcid.org/" + p.orcid : "ORCID: none on record",
-    "Papers: " + p.items.slice(0, 5).map((it) => "PMID " + it.paper.pmid).join(", ")
-  ].join("\n")).join("\n\n");
+  return pickedPeople().map((p) => {
+    const roles = [];
+    if (p.firstCount) roles.push(p.firstCount + " first");
+    if (p.lastCount) roles.push(p.lastCount + " last");
+    if (p.soloCount) roles.push(p.soloCount + " sole");
+    if (p.middleCount) roles.push(p.middleCount + " middle");
+    return [
+      p.name,
+      "Matching papers: " + (p.atLeast ? ">=" : "") + p.count + " (" + roles.join(", ") + ")",
+      p.affiliation ? p.affiliation.text + " (PubMed record " + p.affiliation.pmid + (p.affiliation.year ? ", " + p.affiliation.year : "") + ")" : "Affiliation: none printed",
+      p.email ? "Email: " + p.email.addresses.join(", ") + " (printed on PubMed record " + p.email.pmid + (p.email.year ? ", " + p.email.year : "") + (p.email.elsewhere ? "; that paper names a different institution, so check it" : "") + ")" : "Email: none printed",
+      p.orcid ? "ORCID: https://orcid.org/" + p.orcid : "ORCID: none on record",
+      "Papers: " + p.items.slice(0, 5).map((it) => "PMID " + it.paper.pmid).join(", ")
+    ].join("\n");
+  }).join("\n\n");
 }
 function searchRecord() {
   const L = state.last;
   const mesh = L.cfg.terms.filter((t) => t.kind === "mesh").map((t) => t.label);
   const words = L.cfg.terms.filter((t) => t.kind === "words").map((t) => t.label);
+  const capped = L.count > L.toRead;
   const lines = [
     "Reviewer candidate search record",
     "Date: " + L.cfg.today,
@@ -2345,17 +2645,20 @@ function searchRecord() {
     "Required word in the publication title: delirium",
     "MeSH headings: " + (mesh.length ? mesh.join("; ") : "none"),
     "Exact words: " + (words.length ? words.join("; ") : "none"),
-    "Study design: " + L.cfg.design.label + (L.cfg.design.id ? " (ranking preference; " + fmt(L.designCount) + " matching papers)" : ""),
-    "Author position: " + (L.cfg.position === "any" ? "any author" : positionWords(L.cfg)),
+    "Study design: " + L.cfg.design.label + (L.cfg.design.id ? (L.cfg.design.id === "rct"
+      ? " (ranking preference via PubMed Randomized Controlled Trial publication type, protocols excluded; " + fmt(L.checkedDesignCount) + " kept checked" + (L.protocolExcluded ? ", " + fmt(L.protocolExcluded) + " protocol(s) excluded" : "") + ")"
+      : " (ranking preference; " + fmt(L.checkedDesignCount) + " kept checked)") : ""),
+    "Author eligibility: " + eligibilityPhrase(L.cfg),
+    "Ranking rule: " + (L.cfg.design.id ? "active study design first, then " : "") + "total distinct matching papers (including middle-author papers), then qualifying lead-author count, then newest paper date",
     "Period: last " + L.cfg.years + " years (from " + L.cfg.fromDate + ")",
     "Left out letters, editorials, comments, corrections, retracted papers and preprints: " + (L.cfg.exclude ? "yes" : "no"),
-    "Papers matched: " + L.count + " (read: " + L.toRead + "; kept after title and exclusion checks: " + L.read + (L.cfg.exclude ? "; left out as replies, comments or corrections, by title: " + (L.leftOut || 0) : "") + ")",
-    "Records skipped because their own titles lack “delirium”: " + L.titleMismatch
+    "Papers matched in PubMed: " + fmt(L.count) + " (checked most recent: " + fmt(L.toRead) + (L.oldestChecked ? ", cutoff publication date: " + L.oldestChecked : "") + "; kept after title and exclusion checks: " + fmt(L.read) + (L.cfg.exclude ? "; left out as replies, comments or corrections, by title: " + fmt(L.leftOut || 0) : "") + ")",
+    "Records skipped because their own titles lack “delirium”: " + fmt(L.titleMismatch)
   ];
-  if (L.count > L.toRead) lines.push("Reading limit: only the most recent " + fmt(SETTINGS.maxPapersRead) + " papers were read.");
-  if (L.minOwn === 1) lines.push("Small-pool mode: fewer than " + SETTINGS.fullPapers + " papers matched, so single-paper candidates were included.");
+  if (capped) lines.push("Reading limit: ranking reflects only the most recent " + fmt(L.toRead) + " of " + fmt(L.count) + " PubMed hits checked" + (L.oldestChecked ? " (earliest inspected publication date: " + L.oldestChecked + ")." : "."));
+  if (L.narrowPool) lines.push("Narrow pool: fewer than " + SETTINGS.fullPapers + " papers matched overall.");
   if (missing.summaries || missing.records) lines.push("Missing PubMed data: " + (missing.summaries || 0) + " summaries and " + (missing.records || 0) + " full records did not load.");
-  lines.push("People listed: " + shownPeople().length);
+  lines.push("Displayed candidates: " + shownPeople().length);
   lines.push("People shortlisted: " + pickedPeople().length);
   lines.push("PubMed query: " + L.query);
   return lines.join("\n");
@@ -2382,12 +2685,12 @@ function csvCell(v) {
 function buildCsv(people, withEmail) {
   const L = state.last;
   const mail = withEmail ? ["email_printed", "email_pmid", "personal_mail"] : [];
-  const rows = [["rank", "name", "papers", "first_author_papers", "last_author_papers", "other_author_papers", "design_papers", "latest_year", "affiliation", "affiliation_pmid",
+  const rows = [["rank", "name", "total_matching_papers", "qualifying_position_papers", "first_author_papers", "last_author_papers", "solo_author_papers", "middle_author_papers", "design_papers", "latest_year", "affiliation", "affiliation_pmid",
                  "orcid", ...mail, "name_check", "shares_papers_with", "pmids"]];
   const order = allPeople();
   people.forEach((p) => {
     const note = state.notes && state.notes.get(p.id);
-    rows.push([order.indexOf(p) + 1, p.name, (p.atLeast ? ">=" : "") + p.count, p.firstCount, p.lastCount, p.middleCount, L.cfg.design.id ? p.designCount : "",
+    rows.push([order.indexOf(p) + 1, p.name, (p.atLeast ? ">=" : "") + p.count, p.qualCount, p.firstCount, p.lastCount, p.soloCount, p.middleCount, L.cfg.design.id ? p.designCount : "",
       p.latestYear, p.affiliation ? p.affiliation.text : "", p.affiliation ? p.affiliation.pmid : "", p.orcid || "",
       ...(withEmail ? [p.email ? p.email.addresses.join("; ") : "", p.email ? p.email.pmid : "", p.email && p.email.personal ? "yes" : ""] : []),
       [p.initialsOnly ? "initials only" : p.crowded ? "shared surname and initial" : "", p.mixed ? "papers in " + p.groups + " groups with no shared institution or co-author" : "", withEmail && p.email && p.email.elsewhere ? "email from a paper that names a different institution" : ""].filter(Boolean).join("; "),
@@ -2422,7 +2725,7 @@ $("searchForm").addEventListener("submit", (e) => {
 $("exampleButton").addEventListener("click", () => {
   if (state.running || !mayClearShortlist("The example search")) return;
   state.terms = EXAMPLE.map((t) => Object.assign({}, t));
-  $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
+  $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "2"; $("excludeBox").checked = true;
   $("termInput").value = ""; $("conflictInput").value = ""; closeSuggestions(); setTermNote(""); renderChips();
   run(true);
 });
@@ -2438,8 +2741,9 @@ $("copyButton").addEventListener("click", async () => {
 });
 $("csvButton").addEventListener("click", () => {
   if (!state.last) return;
-  download(buildCsv(shownPeople(), false), "reviewer-candidates-" + fileStamp() + ".csv");
-  $("actionNote").textContent = "Full list CSV (no emails) downloaded.";
+  const shown = shownPeople();
+  download(buildCsv(shown, false), "reviewer-candidates-" + fileStamp() + ".csv");
+  $("actionNote").textContent = "Downloaded " + fmt(shown.length) + " displayed " + (shown.length === 1 ? "candidate" : "candidates") + " as CSV (no emails).";
 });
 $("trayToggle").addEventListener("click", () => {
   setDrawerOpen(!trayDrawerOpen);
@@ -2476,7 +2780,7 @@ $("stopButton").addEventListener("click", (e) => {
 $("resetButton").addEventListener("click", () => {
   if (state.running || !mayClearShortlist("A new search")) return;
   state.terms = []; state.dropNote = ""; $("termInput").value = ""; closeSuggestions(); setTermNote("");
-  $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "5"; $("excludeBox").checked = true;
+  $("designSelect").value = ""; $("positionSelect").value = "either"; $("yearsSelect").value = "2"; $("excludeBox").checked = true;
   $("conflictInput").value = "";
   clearResults(); renderChips(); setStatus("");
   window.scrollTo(0, 0); focusBox();
